@@ -1,0 +1,8 @@
+[meta]
+name        = "s314ke Medals"
+author      = "Mattynator"
+category    = "MattyPlugins"
+version     = "0.1.0"
+
+[script]
+dependencies = [ "NadeoServices" ]
