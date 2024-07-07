@@ -1,10 +1,10 @@
 namespace MyJson
 {
-    Json::Value data_json = Json::Object();
+    // Json::Value data_json = Json::Object();
     Json::Value nadeo_json = Json::Object();
     Json::Value totd_json = Json::Object();
 
-    string data_path = IO::FromStorageFolder("s314kemedal.json");
+    // string data_path = IO::FromStorageFolder("s314kemedal.json");
     string nadeo_path = IO::FromStorageFolder("nadeo.json");
     string totd_path = IO::FromStorageFolder("totd.json");
 
@@ -30,7 +30,7 @@ namespace MyJson
 
     void InitCampaigns(array<Campaign@>& nadeo, array<Campaign@>& totd)
     {
-        // TODO only load non-cached campaigns
+        // TODO make use of caching
         if (reload_campaigns)
         {
             Api::LoadCampaigns(nadeo, CampaignType::Nadeo);
@@ -38,27 +38,28 @@ namespace MyJson
             return;
         }
 
-        if (IO::FileExists(nadeo_path))
-        {
-            nadeo_json = Json::FromFile(nadeo_path);
+        // if (IO::FileExists(nadeo_path))
+        // {
+        //     nadeo_json = Json::FromFile(nadeo_path);
 
-            LoadCampaignsFromJson(nadeo, CampaignType::Nadeo);
-        }
-        else 
-            Api::LoadCampaigns(nadeo, CampaignType::Nadeo);
+        //     LoadCampaignsFromJson(nadeo, CampaignType::Nadeo);
+        // }
+        // else 
+        //     Api::LoadCampaigns(nadeo, CampaignType::Nadeo);
 
-        if (IO::FileExists(totd_path))
-        {
-            totd_json = Json::FromFile(totd_path);
+        // if (IO::FileExists(totd_path))
+        // {
+        //     totd_json = Json::FromFile(totd_path);
 
-            LoadCampaignsFromJson(totd, CampaignType::Totd);
-        }
-        else 
-            Api::LoadCampaigns(totd, CampaignType::Totd);
+        //     LoadCampaignsFromJson(totd, CampaignType::Totd);
+        // }
+        // else 
+        //     Api::LoadCampaigns(totd, CampaignType::Totd);
     }
     
     void ParseAndLoadCampaignsFromJson(Net::HttpRequest@ req, array<Campaign@>& campaigns, CampaignType campaign_type)
     {
+        // save the json for caching purposes
         if (campaign_type == CampaignType::Nadeo)
         {
             nadeo_json = Json::Parse(req.String());
@@ -86,12 +87,11 @@ namespace MyJson
         }
         else
         {
-             // in the json file, month "1" is January
-            array<string> month_names = {"", "January", "February", "March", "April", "May", "June", 
+            array<string> month_names = {"January", "February", "March", "April", "May", "June", 
                                          "July", "August", "September", "October", "November", "December"};
             for (uint i = 0; i < totd_json["monthList"].Length; i++)
             {
-                Campaign campaign(month_names[uint(totd_json["monthList"][i]["month"])] 
+                Campaign campaign(month_names[uint(totd_json["monthList"][i]["month"]) - 1] // -1 because in the json, January is 1
                                     + " " + tostring(uint(totd_json["monthList"][i]["year"])), campaign_type, i);
 
 
@@ -102,33 +102,32 @@ namespace MyJson
 
     string GetMapUidsAsString(Campaign@ campaign)
     {
-        string res = "";
+        string result = "";
         if (campaign.type == CampaignType::Nadeo)
         {
             for (uint i = 0; i < 24; i++)
             {
-                res += nadeo_json["campaignList"][campaign.json_index]["playlist"][i]["mapUid"];
-                res += ",";
+                result += nadeo_json["campaignList"][campaign.json_index]["playlist"][i]["mapUid"];
+                result += ",";
             }
-            res += nadeo_json["campaignList"][campaign.json_index]["playlist"][24]["mapUid"];
+            result += nadeo_json["campaignList"][campaign.json_index]["playlist"][24]["mapUid"];
         }
         else
         {
             uint totds_in_month = totd_json["monthList"][campaign.json_index]["days"].Length;
             for (uint i = 0; i < totds_in_month - 1; i++)
             {
-                res += totd_json["monthList"][campaign.json_index]["days"][i]["mapUid"];
-                res += ",";
+                result += totd_json["monthList"][campaign.json_index]["days"][i]["mapUid"];
+                result += ",";
             }
-            res += totd_json["monthList"][campaign.json_index]["days"][totds_in_month - 1]["mapUid"];
+            result += totd_json["monthList"][campaign.json_index]["days"][totds_in_month - 1]["mapUid"];
         }
-        return res;
+        return result;
     }
 
     void LoadCampaignContents(Campaign@ campaign, Net::HttpRequest@ req)
     {
         Json::Value maps_info = req.Json();
-        Json::ToFile(IO::FromStorageFolder("test.json"), maps_info);
         
         campaign.maps.Resize(0);
         for (uint i = 0; i < maps_info["mapList"].Length; i++)
@@ -147,7 +146,6 @@ namespace MyJson
     void LoadMapRecords(Campaign@ campaign, Net::HttpRequest@ req)
     {
         Json::Value map_times = req.Json();
-        //Json::ToFile(IO::FromStorageFolder("test.json"), map_times);
 
         for (uint i = 0; i < map_times.Length; i++)
         {

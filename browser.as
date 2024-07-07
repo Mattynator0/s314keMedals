@@ -33,9 +33,9 @@ class Browser
 		//    |   O  Title   |   Campaign   |
 		//    |              |     info     |
 		//    |              |              |
-		//    |   Campaign   |  Map 1 sm pb |
-		//    |   selection  |  Map 2 sm pb |
-		//    |              |  Map 3 sm pb |
+		//    |   Campaign   |  Map1  sm pb |
+		//    |   selection  |  Map2  sm pb |
+		//    |              |  Map3  sm pb |
 		//    |              |  ...         |
 		//    |______________|______________|
 		//
@@ -65,16 +65,16 @@ class Browser
 		// leave the right side empty until a campaign is chosen
 		if (campaign_manager.chosen is null)
 		{
-			UI::End();
-			UI::PopStyleColor(3);
+			UI::End(); // "s314ke Medals"
+			UI::PopStyleColor(3); // Separator
 			return;
 		}
 
 		if (!campaign_manager.chosen.maps_loaded)
 		{
 			UI::Text("Loading...");
-			UI::End();
-			UI::PopStyleColor(3);
+			UI::End(); // "s314ke Medals"
+			UI::PopStyleColor(3); // Separator
 			return;
 		}
 
@@ -85,8 +85,8 @@ class Browser
 		DrawMapsInfo();
 
 		UI::EndChild(); // "RightContainer"
-		UI::End();
-		UI::PopStyleColor(3);
+		UI::End(); // "s314ke Medals"
+		UI::PopStyleColor(3); // Separator
 	}
 	
 	void DrawTitle()
@@ -100,24 +100,24 @@ class Browser
 	
 			UI::TableNextColumn();
 			uint padding = 25;
-			uint medal_w = 150;
-			uint medal_h = 150;
-			UI::BeginChild("MedalWrapper", vec2(medal_w + 2 * padding, medal_h + padding));
+			uint medal_x = 150;
+			uint medal_y = 150;
+			UI::BeginChild("MedalWrapper", vec2(medal_x + 2 * padding, medal_y + padding));
 			UI::SetCursorPos(UI::GetCursorPos() + vec2(padding, padding));
-			UI::Image(s314ke_medal, vec2(medal_w, medal_h));
+			UI::Image(s314ke_medal, vec2(medal_x, medal_y));
 			UI::EndChild(); // "MedalWrapper"
 	
 			UI::TableNextColumn();
 			UI::BeginChild("TitleTextWrapper");
-			string title_text = base_circle + " s314ke Medals";
-			float move_titletext_x = (UI::GetWindowSize().x - Draw::MeasureString(title_text).x) / 2 - 35;
-			UI::SetCursorPos(UI::GetCursorPos() + vec2(move_titletext_x, 85)); // center the text
 			UI::PushFont(base_large_font);
+			string title_text = base_circle + " s314ke Medals";
+			// center text
+			vec2 container_size = UI::GetContentRegionAvail();
+			vec2 title_text_size = Draw::MeasureString(title_text);
+			UI::SetCursorPos((container_size - title_text_size) * 0.5f);
 			UI::Text(title_text);
 			UI::PopFont();
 	
-			//float move_titleprogress_x = UI::GetWindowSize().x / 2 - 30;
-			//UI::SetCursorPos(UI::GetCursorPos() + vec2(move_titleprogress_x, 40)); // center the text
 			//UI::PushFont(base_normal_font);
 			//UI::Text(base_circle + " " + campaign_manager.GetAchievedMedalsCount() + " / " + campaign_manager.GetTotalMedalsCount());
 			//UI::PopFont();
@@ -134,7 +134,6 @@ class Browser
 		UI::PushStyleColor(UI::Col::Tab, base_color);
 		UI::PushStyleColor(UI::Col::TabHovered, brightest_color);
 		UI::PushStyleColor(UI::Col::TabActive, brighter_color);
-		UI::PushStyleColor(UI::Col::Border, vec4(1,1,1,1));
 
 		UI::BeginTabBar("CampaignsBar");
 
@@ -153,16 +152,15 @@ class Browser
 		}
 
 		UI::EndTabBar(); // "CampaignsBar"
-		UI::PopStyleColor(4);
+		UI::PopStyleColor(3);
 	}
 
 	void DrawCampaignSelectionMenuTab(CampaignType campaign_type)
 	{
-		const uint buttons_per_row = 4; // TODO
+		const uint buttons_per_row = 4; // TODO vary this based on window width
 
 		UI::BeginChild("TableWrapper", vec2(), false, UI::WindowFlags::NoScrollbar);
 		if (campaign_manager.IsEmpty(campaign_type))
-			// LoadCampaign(campaign_type);
 			UI::Text("Loading...");
 		else
 		{
@@ -176,26 +174,27 @@ class Browser
 				UI::PushStyleColor(UI::Col::Button, base_color);
 				UI::PushStyleColor(UI::Col::ButtonHovered, brighter_color);
 				UI::PushStyleColor(UI::Col::ButtonActive, brightest_color);
+				UI::PushStyleVar(UI::StyleVar::FrameRounding, 10);
 
-				uint campaign_count = campaign_manager.GetCampaignsCount(campaign_type);
 				// offsetting the first row so that the layout is:
 				//
-				//     FALL   SUMMER   SPRING   WINTER
+				//     		     SUMMER 23   SPRING 23   WINTER 23
 				//
-				//     FALL   SUMMER   SPRING   WINTER
+				//     FALL 22   SUMMER 22   SPRING 22   WINTER 22   etc.
 				// 
+				uint campaign_count = campaign_manager.GetCampaignsCount(campaign_type);
 				uint first_row_offset = (campaign_count + 2) % 4;
 				for (uint i = first_row_offset; i < 4; i++)
 					UI::TableNextColumn();
 
-				// button spacing (x = button_w is fixed)
+				// button spacing ('a' is fixed)
 				//  
 				// |    __      __      __    |
 				// |   |__|    |__|    |__|   |
 				// |                          |
-				//      x       x       x
+				//      a       a       a
 				//  <-><--><--><--><--><--><->
-				//   y      2y      2y      y
+				//   b      2b      2b      b
 				// 
 				for (uint i = 0; i < campaign_count; i++)
 				{
@@ -203,33 +202,35 @@ class Browser
 					UI::TableNextColumn();
 					UI::Dummy(vec2(0, 10));
 						
-					uint button_w = 80;
-					uint button_h = 80;
-					float wrapper_w = UI::GetWindowSize().x;
+					vec2 button_size = vec2(80, 80);
+					float whole_width = UI::GetWindowSize().x;
 
-					float y = (wrapper_w - button_w * buttons_per_row) / (buttons_per_row * 2);
-					UI::SetCursorPos(UI::GetCursorPos() + vec2(y, 0)); // center button
+					// look at the figure above to understand what 'a' and 'b' are
+					float a = button_size.x;
+					float b = (whole_width - a * buttons_per_row) / (buttons_per_row * 2);
+					UI::SetCursorPos(UI::GetCursorPos() + vec2(b, 0)); // center button
 
 					UI::PushID("CampaignButton" + tostring(i));
-					if (UI::Button("", vec2(button_w, button_h)))
+					if (UI::Button("", button_size))
 					{
 						campaign_manager.ChooseCampaign(campaign_type, i);
 					}
 					UI::PopID();
 						
 					UI::PushFont(base_large_font);
-					float move_twodigits_x = (button_w - Draw::MeasureString(campaign.GetTwoLastDigitsOfYear()).x) / 2;
+					float move_twodigits_x = (button_size.x - Draw::MeasureString(campaign.GetTwoLastDigitsOfYear()).x) * 0.5f;
 					float additional_offset = 1.0; // for some reason the text is slightly off center without this
-					UI::SetCursorPos(UI::GetCursorPos() + vec2(y + move_twodigits_x + additional_offset, -70)); // center text
+					UI::SetCursorPos(UI::GetCursorPos() + vec2(b + move_twodigits_x + additional_offset, -70)); // center text
 					UI::Text(campaign.GetTwoLastDigitsOfYear()); // year
 					UI::PopFont();
 
 					UI::PushFont(base_normal_font); 
-					float move_month_x = (button_w - Draw::MeasureString(campaign.GetShortName()).x) / 2;
-					UI::SetCursorPos(UI::GetCursorPos() + vec2(y + move_month_x + additional_offset, 0)); // center text
+					float move_month_x = (button_size.x - Draw::MeasureString(campaign.GetShortName()).x) * 0.5f;
+					UI::SetCursorPos(UI::GetCursorPos() + vec2(b + move_month_x + additional_offset, 0)); // center text
 					UI::Text(campaign.GetShortName()); // month
 					UI::PopFont();
 				}
+				UI::PopStyleVar();
 				UI::PopStyleColor(3);
 
 				UI::EndTable(); // "CampaignsTable"
@@ -248,30 +249,38 @@ class Browser
 			UI::TableSetupColumn("##name", UI::TableColumnFlags::WidthStretch);
 			UI::TableSetupColumn("##progress", UI::TableColumnFlags::WidthStretch);
 
-			UI::TableNextColumn();
 			UI::PushStyleColor(UI::Col::Button, base_color);
 			UI::PushStyleColor(UI::Col::ButtonHovered, brighter_color);
 			UI::PushStyleColor(UI::Col::ButtonActive, brightest_color);
 			UI::PushFont(base_large_font);
+
+			UI::TableNextColumn();
 			UI::BeginChild("CampaignName");
-			vec2 container_size = UI::GetWindowSize();
-			UI::SetCursorPos(UI::GetCursorPos() + vec2(container_size.x / 2 - 65, 60)); // center the text
+			// center the text
+			vec2 container_size = UI::GetContentRegionAvail();
+			vec2 campaignname_text_size = Draw::MeasureString(campaign_manager.GetChosenCampaignName());
+			UI::SetCursorPos((container_size - campaignname_text_size) * 0.5f);
 			UI::Text(campaign_manager.GetChosenCampaignName()); // full campaign name
 			UI::EndChild(); // "CampaignName"
+			
 			UI::TableNextColumn();
 			UI::BeginChild("CampaignMedalCounter");
-			UI::SetCursorPos(UI::GetCursorPos() + vec2(container_size.x / 2 - 35, 60)); // center the text
-			UI::Text(base_circle + " " + tostring(campaign_manager.chosen.medals_achieved) 
-							   + " / " + tostring(campaign_manager.chosen.medals_total));
-			UI::SetCursorPos(UI::GetCursorPos() + vec2(100, 0));
+			string medalcounter_text = base_circle + " " + tostring(campaign_manager.chosen.medals_achieved) 
+							   + " / " + tostring(campaign_manager.chosen.medals_total);
+			container_size = UI::GetContentRegionAvail();
+			vec2 medalcounter_text_size = Draw::MeasureString(medalcounter_text);
+			UI::SetCursorPos((container_size - medalcounter_text_size) * 0.5f + vec2(-10, 0)); // -10 to account for the refresh button
+			UI::Text(medalcounter_text);
+			UI::SameLine();
 			UI::PushFont(base_small_font);
 			if (UI::Button(Icons::Refresh)) {
 				startnew(CoroutineFunc(campaign_manager.ReloadChosenCampaignMaps));
 			}
-			UI::PopFont();
+			UI::PopFont(); // small
 			UI::EndChild(); // "CampaignMedalCounter"
-			UI::PopFont();
-			UI::PopStyleColor(3);
+
+			UI::PopFont(); // large
+			UI::PopStyleColor(3); // Button
 			UI::EndTable(); // "CampaignInfoTable"
 		}
 		UI::EndChild(); // "CampaignInfo"
@@ -282,7 +291,7 @@ class Browser
 		UI::BeginChild("Maps", vec2(), false, UI::WindowFlags::NoScrollbar);
 		UI::PushFont(base_small_font);
 		UI::PushStyleColor(UI::Col::TableRowBg, vec4(.25, .25, .25, .2));
-		if (UI::BeginTable("MapsTable", 6, UI::TableFlags::RowBg | UI::TableFlags::SizingFixedFit))
+		if (UI::BeginTable("MapsTable", 6, UI::TableFlags::RowBg | UI::TableFlags::ScrollY | UI::TableFlags::PadOuterX))
 		{
 			UI::TableSetupColumn("Name", UI::TableColumnFlags::WidthStretch, 2);
 			UI::TableSetupColumn("##padding", UI::TableColumnFlags::WidthFixed);
@@ -290,13 +299,13 @@ class Browser
 			UI::TableSetupColumn("##achieved", UI::TableColumnFlags::WidthFixed);
 			UI::TableSetupColumn("PB", UI::TableColumnFlags::WidthStretch);
 			UI::TableSetupColumn("##button", UI::TableColumnFlags::WidthFixed);
+			UI::TableSetupScrollFreeze(6, 1);
 
 			UI::TableHeadersRow();
 			UI::PushStyleColor(UI::Col::Button, base_color);
 			UI::PushStyleColor(UI::Col::ButtonHovered, brighter_color);
 			UI::PushStyleColor(UI::Col::ButtonActive, brightest_color);
 
-			// TODO maybe use UI::ListClipper instead?
 			for (uint i = 0; i < campaign_manager.GetMapsCount(); i++)
 			{
 				Map map = campaign_manager.GetMap(i);
@@ -304,7 +313,6 @@ class Browser
 
 				UI::TableNextColumn(); // map name
 				UI::AlignTextToFramePadding();
-				UI::SetCursorPos(UI::GetCursorPos() + vec2(5.0, 0.0)); // a little padding
 				UI::Text(Text::OpenplanetFormatCodes(map.name));
 
 				UI::TableNextColumn(); // padding
@@ -328,7 +336,7 @@ class Browser
 				}
 				UI::PopID(); // "Play" + i
 			}
-			UI::PopStyleColor(3);
+			UI::PopStyleColor(3); // Button
 
 			UI::EndTable(); // "MapsTable"
 		}

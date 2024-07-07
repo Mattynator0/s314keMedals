@@ -22,7 +22,6 @@
 //   (might not actually do anything, idk)
 //
 
-// TODO change project name (and maybe repo name) from 'Spike Medals' to 's314ke Medals'
 Browser@ browser;
 bool user_has_permissions;
 
