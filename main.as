@@ -6,13 +6,9 @@
 //
 // - add a checkbox for only displaying the maps where a s314ke medal exists and another one for only displaying unbeaten s314ke medals
 //
-// - lazy loading of campaign selection tabs
-//
 // - cache some information like medal counts for each campaign
 //
 // - add some kind of styling to campaign selection buttons and highlight the chosen campaign button for visual clarity
-//
-// - keep the header row visible in DrawMapsInfo() when scrolling (if possible)
 //
 // - tie the number of buttons per row in campaign selection menu to the window width (remove the first button offset?)
 //
@@ -43,7 +39,7 @@ void RenderInterface()
 	if (browser is null)
 	{
 		UI::SetNextWindowSize(100, 60);
-		UI::Begin("s314ke medals");
+		UI::Begin("s314ke Medals");
 		UI::Text("Loading...");
 		UI::End();
 		return;
