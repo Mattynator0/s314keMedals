@@ -114,13 +114,13 @@ namespace MyJson
         }
         else
         {
-            uint totds_in_month = totd_json["monthList"][campaign.json_index]["days"].Length;
-            for (uint i = 0; i < totds_in_month - 1; i++)
+            uint n_totds_in_month = totd_json["monthList"][campaign.json_index]["days"].Length;
+            for (uint i = 0; i < n_totds_in_month - 1; i++)
             {
                 result += totd_json["monthList"][campaign.json_index]["days"][i]["mapUid"];
                 result += ",";
             }
-            result += totd_json["monthList"][campaign.json_index]["days"][totds_in_month - 1]["mapUid"];
+            result += totd_json["monthList"][campaign.json_index]["days"][n_totds_in_month - 1]["mapUid"];
         }
         return result;
     }
@@ -157,5 +157,6 @@ namespace MyJson
             else
                 campaign.maps[j].pb_time = map_times[i]["recordScore"]["time"];
         }
+        campaign.RecalculateMedalsCounts();
     }
 }

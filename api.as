@@ -20,7 +20,6 @@ namespace Api
         MyJson::ParseAndLoadCampaignsFromJson(req, campaigns, campaign_type);
     }
 
-    //FIXME lock might be unnecessary/badly implemented
     bool load_maps_lock = false;
     void LoadMaps(Campaign@ campaign)
     {
@@ -46,26 +45,45 @@ namespace Api
         campaign.RecalculateMedalsCounts();
     }
 
+    class MyCoroutineData
+    {
+        string req_url;
+        Campaign@ campaign;
+
+        MyCoroutineData(const string &in req_url, Campaign@ campaign) {
+            this.req_url = req_url;
+            @this.campaign = campaign;
+        }
+    }
+
     void LoadS314keMedalsAndPBs(Campaign@ campaign)
     {
-        string req_url = "https://prod.trackmania.core.nadeo.online/mapRecords/?accountIdList=";
+        string req_url_base = "https://prod.trackmania.core.nadeo.online/v2/mapRecords/?accountIdList=";
 
-        req_url += cast<CGameManiaPlanet>(GetApp()).MenuManager.MenuCustom_CurrentManiaApp.LocalUser.WebServicesUserId;
-        req_url += ",";
-        req_url += s314ke_id;
+        req_url_base += cast<CGameManiaPlanet>(GetApp()).MenuManager.MenuCustom_CurrentManiaApp.LocalUser.WebServicesUserId;
+        req_url_base += ",";
+        req_url_base += s314ke_id;
+        req_url_base += "&mapId=";
 
-        req_url += "&mapIdList=";
-        for (uint i = 0; i < campaign.maps.Length - 1; i++)
+        array<MyCoroutineData@> coroutine_data;
+        for (uint i = 0; i < campaign.maps.Length; i++)
         {
+            string req_url = req_url_base;
             req_url += campaign.maps[i].id;
-            req_url += ",";
-        }
-        req_url += campaign.maps[campaign.maps.Length - 1].id;
 
-        Net::HttpRequest@ req = NadeoServices::Get("NadeoServices", req_url);
+            MyCoroutineData data(req_url, campaign);
+            coroutine_data.InsertLast(data);
+
+            startnew(CoroutineFuncUserdata(MyCoroutine), coroutine_data[i]);
+        }
+    }
+
+    void MyCoroutine(ref@ _data) {
+        auto data = cast<MyCoroutineData>(_data);
+        Net::HttpRequest@ req = NadeoServices::Get("NadeoServices", data.req_url);
         req.Start();
         while (!req.Finished()) yield();
         
-        MyJson::LoadMapRecords(campaign, req);
+        MyJson::LoadMapRecords(data.campaign, req);
     }
 }
