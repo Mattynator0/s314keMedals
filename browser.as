@@ -166,6 +166,7 @@ class Browser
 		{
 			if (UI::BeginTable("CampaignsTable", 4))
 			{
+				// the same column names, offset, etc. are also used for TOTD
 				UI::TableSetupColumn("##fall", UI::TableColumnFlags::WidthStretch);
 				UI::TableSetupColumn("##summer", UI::TableColumnFlags::WidthStretch);
 				UI::TableSetupColumn("##spring", UI::TableColumnFlags::WidthStretch);
