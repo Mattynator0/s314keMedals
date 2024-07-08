@@ -242,7 +242,7 @@ class Browser
 	void DrawCampaignInfo()
 	{
 		if (!user_has_permissions)
-			UI::Text("You don't have permissions to play maps locally.\n\nThe \"Play\" buttons will be hidden.");
+			UI::Text("You don't have permissions to play maps locally.\n\nThe \"Play\" buttons will be disabled.");
 		UI::BeginChild("CampaignInfo", vec2(-1, 150));
 		if (UI::BeginTable("CampaignInfoTable", 2))
 		{
