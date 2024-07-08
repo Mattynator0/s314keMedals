@@ -24,6 +24,11 @@ class Map
 
     void PlayCoroutine()
     {
+        if(!(Permissions::PlayLocalMap() && Permissions::PlayTOTDChannel())) {
+            user_has_permissions = false;
+            return;
+        }
+        
 		auto app = cast<CTrackMania>(GetApp());
         if (app.Network.PlaygroundClientScriptAPI.IsInGameMenuDisplayed) 
         {
