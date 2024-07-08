@@ -45,12 +45,12 @@ namespace Api
         campaign.RecalculateMedalsCounts();
     }
 
-    class MyCoroutineData
+    class LoadRecordsCoroutineData
     {
         string req_url;
         Campaign@ campaign;
 
-        MyCoroutineData(const string &in req_url, Campaign@ campaign) {
+        LoadRecordsCoroutineData(const string &in req_url, Campaign@ campaign) {
             this.req_url = req_url;
             @this.campaign = campaign;
         }
@@ -65,21 +65,21 @@ namespace Api
         req_url_base += s314ke_id;
         req_url_base += "&mapId=";
 
-        array<MyCoroutineData@> coroutine_data;
+        array<LoadRecordsCoroutineData@> coroutine_data;
         for (uint i = 0; i < campaign.maps.Length; i++)
         {
             string req_url = req_url_base;
             req_url += campaign.maps[i].id;
 
-            MyCoroutineData data(req_url, campaign);
+            LoadRecordsCoroutineData data(req_url, campaign);
             coroutine_data.InsertLast(data);
 
-            startnew(CoroutineFuncUserdata(MyCoroutine), coroutine_data[i]);
+            startnew(CoroutineFuncUserdata(LoadS314keMedalsAndPBsCoroutine), coroutine_data[i]);
         }
     }
 
-    void MyCoroutine(ref@ _data) {
-        auto data = cast<MyCoroutineData>(_data);
+    void LoadS314keMedalsAndPBsCoroutine(ref@ _data) {
+        auto data = cast<LoadRecordsCoroutineData>(_data);
         Net::HttpRequest@ req = NadeoServices::Get("NadeoServices", data.req_url);
         req.Start();
         while (!req.Finished()) yield();
