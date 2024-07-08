@@ -330,10 +330,12 @@ class Browser
 
 				UI::TableNextColumn(); // button
 				UI::PushID("Play" + i);
-				if (user_has_permissions && UI::Button("Play"))
+				UI::BeginDisabled(!user_has_permissions);
+				if (UI::Button("Play"))
 				{
 					startnew(CoroutineFunc(map.PlayCoroutine));
 				}
+				UI::EndDisabled();
 				UI::PopID(); // "Play" + i
 			}
 			UI::PopStyleColor(3); // Button
