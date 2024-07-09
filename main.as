@@ -18,12 +18,6 @@
 //   (might not actually do anything, idk)
 //
 
-// TODO:
-//
-// add an option to open/close the window
-//
-// handle the case when local user is s314ke
-
 Browser@ browser;
 bool user_has_permissions;
 
