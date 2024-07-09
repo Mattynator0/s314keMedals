@@ -9,7 +9,7 @@ class Map
 
     bool MedalAchieved()
     {
-        return pb_time < s314ke_medal_time;
+        return pb_time <= s314ke_medal_time;
     }
 
     bool MedalExists()
