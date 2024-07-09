@@ -4,9 +4,9 @@ namespace MyJson
     Json::Value nadeo_json = Json::Object();
     Json::Value totd_json = Json::Object();
 
-    // string data_path = IO::FromStorageFolder("s314kemedal.json");
-    string nadeo_path = IO::FromStorageFolder("nadeo.json");
-    string totd_path = IO::FromStorageFolder("totd.json");
+    // const string data_path = IO::FromStorageFolder("s314kemedal.json");
+    const string nadeo_path = IO::FromStorageFolder("nadeo.json");
+    const string totd_path = IO::FromStorageFolder("totd.json");
 
     bool reload_campaigns = true;
 
