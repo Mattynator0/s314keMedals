@@ -5,6 +5,8 @@ class Browser
 	vec4 brightest_color = vec4(0.3, 0.25, 1, 1.0);
 	string base_circle = "\\$31b" + Icons::Circle + "\\$fff ";
 
+	bool show_browser_window = true;
+
 	uint window_w = 900;
 	uint window_h = 600;
 
@@ -26,8 +28,17 @@ class Browser
 		@campaign_manager = CampaignManager();
 	}
 
+	void RenderMenu() 
+	{
+    	if (UI::MenuItem(base_circle + "s314ke Medals", "", show_browser_window)) {
+        	show_browser_window = !show_browser_window;
+    	}
+	}
+
 	void Draw()
 	{
+		if (!show_browser_window) return;
+
 		//     _____________________________
 		//    |              |              |
 		//    |   O  Title   |   Campaign   |
@@ -47,7 +58,7 @@ class Browser
 		UI::PushStyleColor(UI::Col::SeparatorActive, brightest_color);
 
 		UI::SetNextWindowSize(window_w, window_h);
-		UI::Begin(base_circle + "s314ke Medals", UI::WindowFlags::NoCollapse | UI::WindowFlags::NoScrollbar);
+		UI::Begin(base_circle + "s314ke Medals", show_browser_window, UI::WindowFlags::NoCollapse | UI::WindowFlags::NoScrollbar);
 		UI::Columns(2);
 
 		// ------------------------------------------------ LEFT SIDE ------------------------------------------------
