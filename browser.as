@@ -171,36 +171,23 @@ class Browser
 
 	void DrawCampaignSelectionMenuTab(CampaignType campaign_type)
 	{
-		const uint buttons_per_row = 4; // TODO vary this based on window width
+		vec2 button_size = vec2(80, 80);
+		const float button_padding = 5; // also minimum value of 'b'
+		const uint buttons_per_row = Math::Max(1, uint(UI::GetWindowSize().x / (button_size.x + 2 * button_padding)));
 
 		UI::BeginChild("TableWrapper", vec2(), false, UI::WindowFlags::NoScrollbar);
 		if (campaign_manager.IsEmpty(campaign_type))
 			UI::Text("Loading...");
 		else
 		{
-			if (UI::BeginTable("CampaignsTable", 4))
+			if (UI::BeginTable("CampaignsTable", buttons_per_row))
 			{
-				// the same column names, offset, etc. are also used for TOTD
-				UI::TableSetupColumn("##fall", UI::TableColumnFlags::WidthStretch);
-				UI::TableSetupColumn("##summer", UI::TableColumnFlags::WidthStretch);
-				UI::TableSetupColumn("##spring", UI::TableColumnFlags::WidthStretch);
-				UI::TableSetupColumn("##winter", UI::TableColumnFlags::WidthStretch);
-
 				UI::PushStyleColor(UI::Col::Button, base_color);
 				UI::PushStyleColor(UI::Col::ButtonHovered, brighter_color);
 				UI::PushStyleColor(UI::Col::ButtonActive, brightest_color);
 				UI::PushStyleVar(UI::StyleVar::FrameRounding, 10);
 
-				// offsetting the first row so that the layout is:
-				//
-				//     		     SUMMER 23   SPRING 23   WINTER 23
-				//
-				//     FALL 22   SUMMER 22   SPRING 22   WINTER 22   etc.
-				// 
 				uint campaign_count = campaign_manager.GetCampaignsCount(campaign_type);
-				uint first_row_offset = (campaign_count + 2) % 4;
-				for (uint i = first_row_offset; i < 4; i++)
-					UI::TableNextColumn();
 
 				// button spacing ('a' is fixed)
 				//  
@@ -215,9 +202,8 @@ class Browser
 				{
 					Campaign@ campaign = campaign_manager.GetCampaign(campaign_type, i);
 					UI::TableNextColumn();
-					UI::Dummy(vec2(0, 10));
+					UI::Dummy(vec2(0, 2 * button_padding));
 						
-					vec2 button_size = vec2(80, 80);
 					float whole_width = UI::GetWindowSize().x;
 
 					// look at the figure above to understand what 'a' and 'b' are
