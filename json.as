@@ -151,10 +151,9 @@ namespace MyJson
         {
             uint j;
             campaign.mapid_to_array_index.Get(map_times[i]["mapId"], j);
-
             if (map_times[i]["accountId"] == Api::s314ke_id)
                 campaign.maps[j].s314ke_medal_time = map_times[i]["recordScore"]["time"];
-            else
+            if (map_times[i]["accountId"] == Api::local_user_id)
                 campaign.maps[j].pb_time = map_times[i]["recordScore"]["time"];
         }
         campaign.RecalculateMedalsCounts();
