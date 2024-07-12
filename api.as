@@ -4,6 +4,7 @@ namespace Api
     //      does something interesting with sending a json file using Post() and gets the specified data back
 
     const string s314ke_id = "5f9c2a43-593f-4e84-a64d-82319058dd3a";
+    const string local_user_id = cast<CGameManiaPlanet>(GetApp()).MenuManager.MenuCustom_CurrentManiaApp.LocalUser.WebServicesUserId;
 
     void LoadCampaigns(array<Campaign@>& campaigns, CampaignType campaign_type)
     {
@@ -60,21 +61,19 @@ namespace Api
     {
         string req_url_base = "https://prod.trackmania.core.nadeo.online/v2/mapRecords/?accountIdList=";
 
-        req_url_base += cast<CGameManiaPlanet>(GetApp()).MenuManager.MenuCustom_CurrentManiaApp.LocalUser.WebServicesUserId;
+        req_url_base += local_user_id;
         req_url_base += ",";
         req_url_base += s314ke_id;
         req_url_base += "&mapId=";
 
-        array<LoadRecordsCoroutineData@> coroutine_data;
         for (uint i = 0; i < campaign.maps.Length; i++)
         {
             string req_url = req_url_base;
             req_url += campaign.maps[i].id;
 
-            LoadRecordsCoroutineData data(req_url, campaign);
-            coroutine_data.InsertLast(data);
+            LoadRecordsCoroutineData coroutine_data(req_url, campaign);
 
-            startnew(CoroutineFuncUserdata(LoadS314keMedalsAndPBsCoroutine), coroutine_data[i]);
+            startnew(CoroutineFuncUserdata(LoadS314keMedalsAndPBsCoroutine), coroutine_data);
         }
     }
 
