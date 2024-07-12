@@ -6,6 +6,7 @@ class Browser
 	string base_circle = "\\$31b" + Icons::Circle + "\\$fff ";
 
 	bool show_browser_window = true;
+	bool show_only_unbeaten_medals = false;
 
 	uint window_w = 900;
 	uint window_h = 600;
@@ -56,6 +57,8 @@ class Browser
 		UI::PushStyleColor(UI::Col::Separator, base_color);
 		UI::PushStyleColor(UI::Col::SeparatorHovered, brighter_color);
 		UI::PushStyleColor(UI::Col::SeparatorActive, brightest_color);
+		UI::PushStyleColor(UI::Col::ButtonHovered, brighter_color);
+		UI::PushStyleColor(UI::Col::ButtonActive, brightest_color);
 
 		UI::SetNextWindowSize(window_w, window_h);
 		UI::Begin(base_circle + "s314ke Medals", show_browser_window, UI::WindowFlags::NoCollapse | UI::WindowFlags::NoScrollbar);
@@ -77,7 +80,7 @@ class Browser
 		if (campaign_manager.chosen is null)
 		{
 			UI::End(); // "s314ke Medals"
-			UI::PopStyleColor(3); // Separator
+		UI::PopStyleColor(5); // Separator and Button
 			return;
 		}
 
@@ -85,7 +88,7 @@ class Browser
 		{
 			UI::Text("Loading...");
 			UI::End(); // "s314ke Medals"
-			UI::PopStyleColor(3); // Separator
+		UI::PopStyleColor(5); // Separator and Button
 			return;
 		}
 
@@ -97,7 +100,7 @@ class Browser
 
 		UI::EndChild(); // "RightContainer"
 		UI::End(); // "s314ke Medals"
-		UI::PopStyleColor(3); // Separator
+		UI::PopStyleColor(5); // Separator and Button
 	}
 	
 	void DrawTitle()
@@ -301,8 +304,13 @@ class Browser
 	void DrawMapsInfo()
 	{
 		UI::BeginChild("Maps", vec2(), false, UI::WindowFlags::NoScrollbar);
-		UI::PushFont(base_small_font);
+		UI::PushStyleColor(UI::Col::CheckMark, brightest_color);
+		UI::PushStyleColor(UI::Col::FrameBgHovered, base_color);
+		UI::PushStyleColor(UI::Col::FrameBgActive, brighter_color);
+		// a single whitespace at the beginning of the checkbox label is intentional
+		show_only_unbeaten_medals = UI::Checkbox(" Only show maps with an unachieved medal", show_only_unbeaten_medals);
 		UI::PushStyleColor(UI::Col::TableRowBg, vec4(.25, .25, .25, .2));
+		UI::PushFont(base_small_font);
 		if (UI::BeginTable("MapsTable", 6, UI::TableFlags::RowBg | UI::TableFlags::ScrollY | UI::TableFlags::PadOuterX))
 		{
 			UI::TableSetupColumn("Name", UI::TableColumnFlags::WidthStretch, 2);
@@ -321,6 +329,9 @@ class Browser
 			for (uint i = 0; i < campaign_manager.GetMapsCount(); i++)
 			{
 				Map map = campaign_manager.GetMap(i);
+				// skip if checkbox is ticked and medal is achieved or doesn't exist
+				if (show_only_unbeaten_medals && (map.MedalAchieved() || !map.MedalExists()))
+					continue;
 				UI::TableNextRow(UI::TableRowFlags::None, 30);
 
 				UI::TableNextColumn(); // map name
@@ -354,8 +365,8 @@ class Browser
 
 			UI::EndTable(); // "MapsTable"
 		}
-		UI::PopStyleColor(1); // TableRowBg
 		UI::PopFont();
+		UI::PopStyleColor(4); // TableRowBg and FrameBg
 		UI::EndChild(); // "Maps"
 	}
 }
