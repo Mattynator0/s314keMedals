@@ -6,6 +6,7 @@ class Map
     uint s314ke_medal_time = 0;
     uint pb_time = uint(-1) - 1;
     string download_url;
+    Campaign@ campaign;
 
     bool MedalAchieved()
     {
