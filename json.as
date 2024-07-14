@@ -8,8 +8,9 @@ namespace MyJson
     const string nadeo_path = IO::FromStorageFolder("nadeo.json");
     const string totd_path = IO::FromStorageFolder("totd.json");
 
-    bool reload_campaigns = true;
+    dictionary map_uid_to_handle;
 
+    bool reload_campaigns = true;
     
     void SavePluginStorageData()
     {
@@ -138,6 +139,9 @@ namespace MyJson
             map.id = maps_info["mapList"][i]["mapId"];
             campaign.mapid_to_array_index.Set(map.id, i);
             map.download_url = maps_info["mapList"][i]["downloadUrl"];
+            @map.campaign = campaign;
+
+            map_uid_to_handle.Set(map.uid, @map);
 
             campaign.maps.InsertLast(map);
         }
