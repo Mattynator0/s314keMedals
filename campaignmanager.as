@@ -11,11 +11,11 @@ class CampaignManager
     CampaignManager()
     {
         MyJson::LoadPluginStorageData();
-        MyJson::InitCampaigns(nadeo, totd);
+        MyJson::InitCampaignList(nadeo, totd);
         MyJson::SavePluginStorageData();
     }
 
-    void ChooseCampaign(CampaignType campaign_type, uint index)
+    void ChooseCampaign(const CampaignType&in campaign_type, uint index)
     {
         @chosen = GetCampaign(campaign_type, index);
 
@@ -34,17 +34,17 @@ class CampaignManager
         Api::LoadMaps(chosen);
     }
 
-    bool IsEmpty(CampaignType campaign_type)
+    bool IsEmpty(const CampaignType&in campaign_type)
     {
         return (campaign_type == CampaignType::Nadeo) ? nadeo.IsEmpty() : totd.IsEmpty();
     }
 
-    uint GetCampaignsCount(CampaignType campaign_type)
+    uint GetCampaignsCount(const CampaignType&in campaign_type)
     {
         return (campaign_type == CampaignType::Nadeo) ? nadeo.Length : totd.Length;
     }
 
-    Campaign@ GetCampaign(CampaignType campaign_type, uint index)
+    Campaign@ GetCampaign(const CampaignType&in campaign_type, uint index)
     {
         return (campaign_type == CampaignType::Nadeo) ? nadeo[index] : totd[index];
     }

@@ -28,7 +28,7 @@ namespace Api
         }
     }
     // refreshes records on the last played map
-    void OnMapChanged(const string &in last_map_uid) 
+    void OnMapChanged(const string&in last_map_uid) 
     {
         // find the map uid, request records and load them into the campaign data structure
         // TODO
@@ -44,7 +44,7 @@ namespace Api
         startnew(LoadCampaignRecordsCoroutine, map_data);
     }
 
-    void LoadCampaigns(array<Campaign@>& campaigns, CampaignType campaign_type)
+    void LoadCampaignList(array<Campaign@>& campaigns, const CampaignType&in campaign_type)
     {
         string req_url;
         if (campaign_type == CampaignType::Nadeo)
@@ -56,7 +56,7 @@ namespace Api
         req.Start();
         while (!req.Finished()) yield();
 
-        MyJson::ParseAndLoadCampaignsFromJson(req, campaigns, campaign_type);
+        MyJson::ParseAndLoadCampaignListFromJson(req, campaigns, campaign_type);
     }
 
     bool load_maps_lock = false;

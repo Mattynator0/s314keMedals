@@ -29,13 +29,13 @@ namespace MyJson
         // }
     }
 
-    void InitCampaigns(array<Campaign@>& nadeo, array<Campaign@>& totd)
+    void InitCampaignList(array<Campaign@>& nadeo, array<Campaign@>& totd)
     {
         // TODO make use of caching
         if (reload_campaigns)
         {
-            Api::LoadCampaigns(nadeo, CampaignType::Nadeo);
-            Api::LoadCampaigns(totd, CampaignType::Totd);
+            Api::LoadCampaignList(nadeo, CampaignType::Nadeo);
+            Api::LoadCampaignList(totd, CampaignType::Totd);
             return;
         }
 
@@ -58,7 +58,7 @@ namespace MyJson
         //     Api::LoadCampaigns(totd, CampaignType::Totd);
     }
     
-    void ParseAndLoadCampaignsFromJson(Net::HttpRequest@ req, array<Campaign@>& campaigns, CampaignType campaign_type)
+    void ParseAndLoadCampaignListFromJson(Net::HttpRequest@ req, array<Campaign@>& campaigns, const CampaignType&in campaign_type)
     {
         // save the json for caching purposes
         if (campaign_type == CampaignType::Nadeo)
@@ -72,10 +72,10 @@ namespace MyJson
             Json::ToFile(totd_path, totd_json);
         }
 
-        LoadCampaignsFromJson(campaigns, campaign_type);
+        LoadCampaignListFromJson(campaigns, campaign_type);
     }
 
-    void LoadCampaignsFromJson(array<Campaign@>& campaigns, CampaignType campaign_type)
+    void LoadCampaignListFromJson(array<Campaign@>& campaigns, const CampaignType&in campaign_type)
     {
         if (campaign_type == CampaignType::Nadeo)
         {

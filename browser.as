@@ -169,7 +169,7 @@ class Browser
 		UI::PopStyleColor(3);
 	}
 
-	void DrawCampaignSelectionMenuTab(CampaignType campaign_type)
+	void DrawCampaignSelectionMenuTab(const CampaignType&in campaign_type)
 	{
 		vec2 button_size = vec2(80, 80);
 		const float button_padding = 5; // also minimum value of 'b'
@@ -189,7 +189,7 @@ class Browser
 
 				uint campaign_count = campaign_manager.GetCampaignsCount(campaign_type);
 
-				// button spacing ('a' is fixed)
+				// button spacing (value of 'a' is fixed)
 				//  
 				// |    __      __      __    |
 				// |   |__|    |__|    |__|   |

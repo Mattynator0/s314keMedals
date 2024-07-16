@@ -16,7 +16,7 @@ class Campaign
     uint medals_achieved = 0;
     uint medals_total = 0;
 
-    Campaign(const string &in name, CampaignType type, uint json_index)
+    Campaign(const string&in name, const CampaignType&in type, uint json_index)
     {
         this.name = name;
         maps_loaded = false;
