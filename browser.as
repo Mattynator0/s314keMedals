@@ -291,6 +291,7 @@ class Browser
 	{
 		UI::BeginChild("Maps", vec2(), false, UI::WindowFlags::NoScrollbar);
 		UI::PushStyleColor(UI::Col::CheckMark, brightest_color);
+		UI::PushStyleColor(UI::Col::FrameBg, vec4(.25, .25, .25, .2));
 		UI::PushStyleColor(UI::Col::FrameBgHovered, base_color);
 		UI::PushStyleColor(UI::Col::FrameBgActive, brighter_color);
 		// a single whitespace at the beginning of the checkbox label is intentional
@@ -352,7 +353,7 @@ class Browser
 			UI::EndTable(); // "MapsTable"
 		}
 		UI::PopFont();
-		UI::PopStyleColor(4); // TableRowBg and FrameBg
+		UI::PopStyleColor(5); // TableRowBg, Frame, Checkmark
 		UI::EndChild(); // "Maps"
 	}
 }
