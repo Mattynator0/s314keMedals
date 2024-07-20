@@ -1,10 +1,10 @@
 namespace Api
 {
     const string s314ke_id = "5f9c2a43-593f-4e84-a64d-82319058dd3a";
-    const string local_user_id = cast<CGameManiaPlanet>(GetApp()).MenuManager.MenuCustom_CurrentManiaApp.LocalUser.WebServicesUserId;
-
-    const string records_req_url_base = "https://prod.trackmania.core.nadeo.online/v2/mapRecords/?accountIdList=" 
-                                        + local_user_id + "," + s314ke_id + "&mapId=";
+    
+    string GetWSID() { return cast<CGameManiaPlanet>(GetApp()).MenuManager.MenuCustom_CurrentManiaApp.LocalUser.WebServicesUserId; }
+    string GetRecordsReqUrlBase() { return "https://prod.trackmania.core.nadeo.online/v2/mapRecords/?accountIdList=" 
+                                        + GetWSID() + "," + s314ke_id + "&mapId=";}
     
     void WatchForMapChange() 
     {
@@ -30,15 +30,13 @@ namespace Api
     // refreshes records on the last played map
     void OnMapChanged(const string&in last_map_uid) 
     {
-        // find the map uid, request records and load them into the campaign data structure
-        // TODO
         Map@ last_map;
 
         if (!MyJson::map_uid_to_handle.Exists(last_map_uid))
             return;
 
         MyJson::map_uid_to_handle.Get(last_map_uid, @last_map);
-        string req_url = records_req_url_base + last_map.id;
+        string req_url = GetRecordsReqUrlBase() + last_map.id;
 
         LoadCampaignRecordsCoroutineData map_data(req_url, last_map.campaign);
         startnew(LoadCampaignRecordsCoroutine, map_data);
@@ -99,7 +97,7 @@ namespace Api
     {
         for (uint i = 0; i < campaign.maps.Length; i++)
         {
-            string req_url = records_req_url_base;
+            string req_url = GetRecordsReqUrlBase();
             req_url += campaign.maps[i].id;
 
             LoadCampaignRecordsCoroutineData coroutine_data(req_url, campaign);
@@ -114,6 +112,7 @@ namespace Api
         auto data = cast<LoadCampaignRecordsCoroutineData>(_data);
 
         Net::HttpRequest@ req = NadeoServices::Get("NadeoServices", data.req_url);
+        // the line below should be used if I ever decide to add a global medal counter (meaning 1000+ API calls when activating the plugin)
         // req.Headers['User-Agent'] = "contact here";
         req.Start();
         while (!req.Finished()) yield();
