@@ -7,6 +7,7 @@ namespace MyJson
     // const string data_path = IO::FromStorageFolder("s314kemedal.json");
     const string nadeo_path = IO::FromStorageFolder("nadeo.json");
     const string totd_path = IO::FromStorageFolder("totd.json");
+    const string test_path = IO::FromStorageFolder("test.json");
 
     dictionary map_uid_to_handle;
 
@@ -63,12 +64,12 @@ namespace MyJson
         // save the json for caching purposes
         if (campaign_type == CampaignType::Nadeo)
         {
-            nadeo_json = Json::Parse(req.String());
+            nadeo_json = req.Json();
             Json::ToFile(nadeo_path, nadeo_json);
         }
         else
         {
-            totd_json = Json::Parse(req.String());
+            totd_json = req.Json();
             Json::ToFile(totd_path, totd_json);
         }
 
@@ -129,7 +130,7 @@ namespace MyJson
     void LoadCampaignContents(Campaign@ campaign, Net::HttpRequest@ req)
     {
         Json::Value maps_info = req.Json();
-        
+
         campaign.maps.Resize(0);
         for (uint i = 0; i < maps_info["mapList"].Length; i++)
         {
@@ -150,6 +151,10 @@ namespace MyJson
     void LoadMapRecords(Campaign@ campaign, Net::HttpRequest@ req)
     {
         Json::Value map_times = req.Json();
+        if (map_times.GetType() == Json::Type::Object && map_times.HasKey("message")) {
+            warn("LoadMapRecords: API request returned an error message: " + string(map_times["message"]));
+            return;
+        }
 
         for (uint i = 0; i < map_times.Length; i++)
         {
@@ -157,7 +162,7 @@ namespace MyJson
             campaign.mapid_to_array_index.Get(map_times[i]["mapId"], j);
             if (map_times[i]["accountId"] == Api::s314ke_id)
                 campaign.maps[j].s314ke_medal_time = map_times[i]["recordScore"]["time"];
-            if (map_times[i]["accountId"] == Api::local_user_id)
+            if (map_times[i]["accountId"] == Api::GetWSID())
                 campaign.maps[j].pb_time = map_times[i]["recordScore"]["time"];
         }
         campaign.RecalculateMedalsCounts();
