@@ -5,7 +5,7 @@ class Browser
 	vec4 brightest_color = vec4(0.3, 0.25, 1, 1.0);
 	string base_circle = "\\$31b" + Icons::Circle + "\\$fff ";
 
-	bool show_browser_window = true;
+	bool show_browser_window = false;
 	bool show_only_unbeaten_medals = false;
 
 	uint window_w = 900;
