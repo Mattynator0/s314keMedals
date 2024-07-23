@@ -1,3 +1,6 @@
+[Setting hidden]
+bool show_browser_window = false;
+
 class Browser
 {
 	vec4 base_color = vec4(0.2, 0.1, 0.7, 1.0);
@@ -5,7 +8,6 @@ class Browser
 	vec4 brightest_color = vec4(0.3, 0.25, 1, 1.0);
 	string base_circle = "\\$31b" + Icons::Circle + "\\$fff ";
 
-	bool show_browser_window = false;
 	bool show_only_unbeaten_medals = false;
 
 	uint window_w = 900;
@@ -291,22 +293,27 @@ class Browser
 	{
 		UI::BeginChild("Maps", vec2(), false, UI::WindowFlags::NoScrollbar);
 		UI::PushStyleColor(UI::Col::CheckMark, brightest_color);
-		UI::PushStyleColor(UI::Col::FrameBg, vec4(.25, .25, .25, .2));
+		UI::PushStyleColor(UI::Col::FrameBg, vec4(.35, .35, .35, .3));
 		UI::PushStyleColor(UI::Col::FrameBgHovered, base_color);
 		UI::PushStyleColor(UI::Col::FrameBgActive, brighter_color);
 		// a single whitespace at the beginning of the checkbox label is intentional
 		show_only_unbeaten_medals = UI::Checkbox(" Only show maps with an unachieved medal", show_only_unbeaten_medals);
 		UI::PushStyleColor(UI::Col::TableRowBg, vec4(.25, .25, .25, .2));
 		UI::PushFont(base_small_font);
-		if (UI::BeginTable("MapsTable", 6, UI::TableFlags::RowBg | UI::TableFlags::ScrollY | UI::TableFlags::PadOuterX))
+
+		uint n_columns = campaign_manager.chosen.type == CampaignType::Totd ? 7 
+																			: 6;
+		if (UI::BeginTable("MapsTable", n_columns, UI::TableFlags::RowBg | UI::TableFlags::ScrollY | UI::TableFlags::PadOuterX))
 		{
+			if (campaign_manager.chosen.type == CampaignType::Totd)
+				UI::TableSetupColumn("##day", UI::TableColumnFlags::WidthFixed);
 			UI::TableSetupColumn("Name", UI::TableColumnFlags::WidthStretch, 2);
 			UI::TableSetupColumn("##padding", UI::TableColumnFlags::WidthFixed);
 			UI::TableSetupColumn("Medal", UI::TableColumnFlags::WidthStretch);
 			UI::TableSetupColumn("##achieved", UI::TableColumnFlags::WidthFixed);
 			UI::TableSetupColumn("PB", UI::TableColumnFlags::WidthStretch);
 			UI::TableSetupColumn("##button", UI::TableColumnFlags::WidthFixed);
-			UI::TableSetupScrollFreeze(6, 1);
+			UI::TableSetupScrollFreeze(n_columns, 1);
 
 			UI::TableHeadersRow();
 			UI::PushStyleColor(UI::Col::Button, base_color);
@@ -319,7 +326,15 @@ class Browser
 				// skip if checkbox is ticked and medal is achieved or doesn't exist
 				if (show_only_unbeaten_medals && (map.MedalAchieved() || !map.MedalExists()))
 					continue;
+
 				UI::TableNextRow(UI::TableRowFlags::None, 30);
+
+				if (campaign_manager.chosen.type == CampaignType::Totd) 
+				{
+					UI::TableNextColumn(); // day
+					UI::AlignTextToFramePadding();
+					UI::Text(" " + tostring(i + 1) + " ");
+				}
 
 				UI::TableNextColumn(); // map name
 				UI::AlignTextToFramePadding();
