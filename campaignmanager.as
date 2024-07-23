@@ -1,7 +1,6 @@
 class CampaignManager
 {
-	array<Campaign@> nadeo;
-	array<Campaign@> totd;
+    array<array<Campaign@>> campaigns;
 	Campaign@ chosen;
 
     //uint medals_achieved = 0;
@@ -11,7 +10,7 @@ class CampaignManager
     CampaignManager()
     {
         MyJson::LoadPluginStorageData();
-        MyJson::InitCampaignList(nadeo, totd);
+        MyJson::InitCampaignList(campaigns);
         MyJson::SavePluginStorageData();
     }
 
@@ -36,17 +35,17 @@ class CampaignManager
 
     bool IsEmpty(const CampaignType&in campaign_type)
     {
-        return (campaign_type == CampaignType::Nadeo) ? nadeo.IsEmpty() : totd.IsEmpty();
+        return campaigns[campaign_type].IsEmpty();
     }
 
     uint GetCampaignsCount(const CampaignType&in campaign_type)
     {
-        return (campaign_type == CampaignType::Nadeo) ? nadeo.Length : totd.Length;
+        return campaigns[campaign_type].Length;
     }
 
     Campaign@ GetCampaign(const CampaignType&in campaign_type, uint index)
     {
-        return (campaign_type == CampaignType::Nadeo) ? nadeo[index] : totd[index];
+        return campaigns[campaign_type][index];
     }
 
     string GetChosenCampaignName()

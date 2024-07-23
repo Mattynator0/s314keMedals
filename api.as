@@ -42,23 +42,61 @@ namespace Api
         startnew(LoadCampaignRecordsCoroutine, map_data);
     }
 
-    void LoadCampaignList(array<Campaign@>& campaigns, const CampaignType&in campaign_type)
+    void LoadCampaignList(array<Campaign@>@ campaigns, const CampaignType&in campaign_type)
     {
+        if (campaign_type == CampaignType::Other) 
+        {
+            LoadCampaignListOther(campaigns);
+            return;
+        }
+
         string req_url;
         if (campaign_type == CampaignType::Nadeo)
             req_url = "https://live-services.trackmania.nadeo.live/api/token/campaign/official?offset=0&length=1000"; // 1000 to get all of them
-        else
+        else if (campaign_type == CampaignType::Totd)
             req_url = "https://live-services.trackmania.nadeo.live/api/token/campaign/month?offset=0&length=1000"; // 1000 to get all of them
-            
-        Net::HttpRequest@ req = NadeoServices::Get("NadeoLiveServices", req_url);
+
+        auto req = NadeoServices::Get("NadeoLiveServices", req_url);
         req.Start();
         while (!req.Finished()) yield();
 
-        MyJson::ParseAndLoadCampaignListFromJson(req, campaigns, campaign_type);
+        MyJson::LoadCampaignListFromJson(req.Json(), campaigns, campaign_type);
+    }
+
+    void LoadCampaignListOther(array<Campaign@>@ campaigns)
+    {
+        string req_url = "https://openplanet.dev/plugin/s314kemedals/config/other_campaigns";
+        auto @op_req = Net::HttpGet(req_url);
+        while (!op_req.Finished()) yield();
+
+        Json::Value config = op_req.Json();
+        Json::Value@ other_campaigns_json = Json::Object();
+        other_campaigns_json["campaignList"] = Json::Array();
+        for (uint i = 0; i < config.Length; i++)
+        {
+            req_url = "https://live-services.trackmania.nadeo.live/api/token/club/";
+            req_url += config[i]["clubID"];
+            req_url += "/campaign/";
+            req_url += config[i]["campaignID"];
+
+            // FIXME this is fine for very few campaigns, otherwise it's too slow to do it one by one
+            auto @req = NadeoServices::Get("NadeoLiveServices", req_url);
+            req.Start();
+            while (!req.Finished()) yield();
+
+            auto temp_json = req.Json();
+            temp_json["name"] = config[i]["name"];
+            temp_json["shortName"] = config[i]["shortName"];
+            other_campaigns_json["campaignList"].Add(temp_json);
+        }
+
+        //Json::ToFile(MyJson::test_path, other_campaigns_json);
+
+        MyJson::LoadCampaignListFromJson(other_campaigns_json, campaigns, CampaignType::Other);
     }
 
     bool load_maps_lock = false;
-    void LoadMaps(Campaign@ campaign)
+    void LoadMaps(Campaign@ campaign) // TODO adapt to the new campaign type
     {
         while (load_maps_lock) yield(); // prevents loading the same campaign multiple times after spamming the button before the flag is set
 
@@ -73,7 +111,7 @@ namespace Api
         req.Start();
         while (!req.Finished()) yield();
         
-        MyJson::LoadCampaignContents(campaign, req);
+        MyJson::LoadCampaignContents(campaign, req.Json());
 
         LoadCampaignRecords(campaign);
 

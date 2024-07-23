@@ -159,12 +159,17 @@ class Browser
 			
 			UI::EndTabItem(); // "Campaigns"
 		}
-
 		if (UI::BeginTabItem("Track of the Day"))
 		{
 			DrawCampaignSelectionMenuTab(CampaignType::Totd);
 
 			UI::EndTabItem(); // "Track of the Day"
+		}
+		if (UI::BeginTabItem("Other"))
+		{
+			DrawCampaignSelectionMenuTab(CampaignType::Other);
+
+			UI::EndTabItem(); // "Other"
 		}
 
 		UI::EndTabBar(); // "CampaignsBar"
@@ -219,19 +224,31 @@ class Browser
 						campaign_manager.ChooseCampaign(campaign_type, i);
 					}
 					UI::PopID();
-						
-					UI::PushFont(base_large_font);
-					float move_twodigits_x = (button_size.x - Draw::MeasureString(campaign.GetTwoLastDigitsOfYear()).x) * 0.5f;
-					float additional_offset = 1.0; // for some reason the text is slightly off center without this
-					UI::SetCursorPos(UI::GetCursorPos() + vec2(b + move_twodigits_x + additional_offset, -70)); // center text
-					UI::Text(campaign.GetTwoLastDigitsOfYear()); // year
-					UI::PopFont();
+					
+					if (campaign_type == CampaignType::Other)
+					{
+						UI::PushFont(base_large_font);
+						float move_short_name_x = (button_size.x - Draw::MeasureString(campaign.short_name).x) * 0.5f;
+						float additional_offset = 1.0; // for some reason the text is slightly off center without this
+						UI::SetCursorPos(UI::GetCursorPos() + vec2(b + move_short_name_x + additional_offset, -60)); // center text
+						UI::Text(campaign.short_name);
+						UI::PopFont();
+					}
+					else
+					{
+						UI::PushFont(base_large_font);
+						float move_twodigits_x = (button_size.x - Draw::MeasureString(campaign.GetTwoLastDigitsOfYear()).x) * 0.5f;
+						float additional_offset = 1.0; // for some reason the text is slightly off center without this
+						UI::SetCursorPos(UI::GetCursorPos() + vec2(b + move_twodigits_x + additional_offset, -70)); // center text
+						UI::Text(campaign.GetTwoLastDigitsOfYear()); // year
+						UI::PopFont();
 
-					UI::PushFont(base_normal_font); 
-					float move_month_x = (button_size.x - Draw::MeasureString(campaign.GetShortName()).x) * 0.5f;
-					UI::SetCursorPos(UI::GetCursorPos() + vec2(b + move_month_x + additional_offset, 0)); // center text
-					UI::Text(campaign.GetShortName()); // month
-					UI::PopFont();
+						UI::PushFont(base_normal_font); 
+						float move_month_x = (button_size.x - Draw::MeasureString(campaign.short_name).x) * 0.5f;
+						UI::SetCursorPos(UI::GetCursorPos() + vec2(b + move_month_x + additional_offset, 0)); // center text
+						UI::Text(campaign.short_name);
+						UI::PopFont();
+					}
 				}
 				UI::PopStyleVar();
 				UI::PopStyleColor(3);
@@ -296,7 +313,7 @@ class Browser
 		UI::PushStyleColor(UI::Col::FrameBg, vec4(.35, .35, .35, .3));
 		UI::PushStyleColor(UI::Col::FrameBgHovered, base_color);
 		UI::PushStyleColor(UI::Col::FrameBgActive, brighter_color);
-		// a single whitespace at the beginning of the checkbox label is intentional
+		// a single whitespace at the beginning of the checkbox label is intentional and used as padding
 		show_only_unbeaten_medals = UI::Checkbox(" Only show maps with an unachieved medal", show_only_unbeaten_medals);
 		UI::PushStyleColor(UI::Col::TableRowBg, vec4(.25, .25, .25, .2));
 		UI::PushFont(base_small_font);

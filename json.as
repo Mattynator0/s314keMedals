@@ -1,12 +1,12 @@
 namespace MyJson
 {
     // Json::Value data_json = Json::Object();
-    Json::Value nadeo_json = Json::Object();
-    Json::Value totd_json = Json::Object();
+    array<Json::Value> campaign_jsons;
 
     // const string data_path = IO::FromStorageFolder("s314kemedal.json");
-    const string nadeo_path = IO::FromStorageFolder("nadeo.json");
-    const string totd_path = IO::FromStorageFolder("totd.json");
+    const array<string> json_paths = {  IO::FromStorageFolder("nadeo.json"),
+                                        IO::FromStorageFolder("totd.json"),
+                                        IO::FromStorageFolder("other.json") };
     const string test_path = IO::FromStorageFolder("test.json");
 
     dictionary map_uid_to_handle;
@@ -30,13 +30,21 @@ namespace MyJson
         // }
     }
 
-    void InitCampaignList(array<Campaign@>& nadeo, array<Campaign@>& totd)
+    void InitCampaignList(array<array<Campaign@>>@ campaigns_master_array)
     {
+        for (uint i = 0; i < CampaignType::Count; i++) 
+        {
+            campaigns_master_array.InsertLast(array<Campaign@>());
+            campaign_jsons.InsertLast(Json::Object());
+        }
+
         // TODO make use of caching
         if (reload_campaigns)
         {
-            Api::LoadCampaignList(nadeo, CampaignType::Nadeo);
-            Api::LoadCampaignList(totd, CampaignType::Totd);
+            for (uint i = 0; i < CampaignType::Count; i++) 
+            {
+                Api::LoadCampaignList(campaigns_master_array[i], CampaignType(i));
+            }
             return;
         }
 
@@ -58,28 +66,16 @@ namespace MyJson
         // else 
         //     Api::LoadCampaigns(totd, CampaignType::Totd);
     }
-    
-    void ParseAndLoadCampaignListFromJson(Net::HttpRequest@ req, array<Campaign@>& campaigns, const CampaignType&in campaign_type)
+
+    void LoadCampaignListFromJson(Json::Value@ json, array<Campaign@>@ campaigns, const CampaignType&in campaign_type)
     {
         // save the json for caching purposes
+        campaign_jsons[campaign_type] = json;
+        Json::ToFile(json_paths[campaign_type], campaign_jsons[campaign_type]);
+        
         if (campaign_type == CampaignType::Nadeo)
         {
-            nadeo_json = req.Json();
-            Json::ToFile(nadeo_path, nadeo_json);
-        }
-        else
-        {
-            totd_json = req.Json();
-            Json::ToFile(totd_path, totd_json);
-        }
-
-        LoadCampaignListFromJson(campaigns, campaign_type);
-    }
-
-    void LoadCampaignListFromJson(array<Campaign@>& campaigns, const CampaignType&in campaign_type)
-    {
-        if (campaign_type == CampaignType::Nadeo)
-        {
+            auto @nadeo_json = campaign_jsons[CampaignType::Nadeo];
             for (uint i = 0; i < nadeo_json["campaignList"].Length; i++)
             {
                 Campaign campaign(nadeo_json["campaignList"][i]["name"], campaign_type, i);
@@ -87,8 +83,9 @@ namespace MyJson
                 campaigns.InsertLast(campaign);
             }
         }
-        else
+        else if (campaign_type == CampaignType::Totd)
         {
+            auto @totd_json = campaign_jsons[CampaignType::Totd];
             array<string> month_names = {"January", "February", "March", "April", "May", "June", 
                                          "July", "August", "September", "October", "November", "December"};
             for (uint i = 0; i < totd_json["monthList"].Length; i++)
@@ -96,6 +93,15 @@ namespace MyJson
                 Campaign campaign(month_names[uint(totd_json["monthList"][i]["month"]) - 1] // -1 because in the json, January is 1
                                     + " " + tostring(uint(totd_json["monthList"][i]["year"])), campaign_type, i);
 
+                campaigns.InsertLast(campaign);
+            }
+        }
+        else if (campaign_type == CampaignType::Other)
+        {
+            auto @other_json = campaign_jsons[CampaignType::Other];
+            for (uint i = 0; i < other_json["campaignList"].Length; i++)
+            {
+                Campaign campaign(other_json["campaignList"][i]["name"], campaign_type, i, other_json["campaignList"][i]["shortName"]);
 
                 campaigns.InsertLast(campaign);
             }
@@ -105,32 +111,32 @@ namespace MyJson
     string GetMapUidsAsString(Campaign@ campaign)
     {
         string result = "";
-        if (campaign.type == CampaignType::Nadeo)
+        Json::Value json = campaign_jsons[campaign.type];
+        switch (campaign.type)
         {
-            for (uint i = 0; i < 24; i++)
-            {
-                result += nadeo_json["campaignList"][campaign.json_index]["playlist"][i]["mapUid"];
-                result += ",";
-            }
-            result += nadeo_json["campaignList"][campaign.json_index]["playlist"][24]["mapUid"];
+            case CampaignType::Nadeo:
+                json = json["campaignList"][campaign.json_index]["playlist"];
+                break;
+            case CampaignType::Totd:
+                json = json["monthList"][campaign.json_index]["days"];
+                break;
+            case CampaignType::Other:
+                json = json["campaignList"][campaign.json_index]["campaign"]["playlist"];
+                break;
         }
-        else
+
+        uint n_maps = json.Length;
+        for (uint i = 0; i < n_maps - 1; i++)
         {
-            uint n_totds_in_month = totd_json["monthList"][campaign.json_index]["days"].Length;
-            for (uint i = 0; i < n_totds_in_month - 1; i++)
-            {
-                result += totd_json["monthList"][campaign.json_index]["days"][i]["mapUid"];
-                result += ",";
-            }
-            result += totd_json["monthList"][campaign.json_index]["days"][n_totds_in_month - 1]["mapUid"];
+            result += json[i]["mapUid"];
+            result += ",";
         }
+        result += json[n_maps - 1]["mapUid"];
         return result;
     }
 
-    void LoadCampaignContents(Campaign@ campaign, Net::HttpRequest@ req)
+    void LoadCampaignContents(Campaign@ campaign, Json::Value@ maps_info)
     {
-        Json::Value maps_info = req.Json();
-
         campaign.maps.Resize(0);
         for (uint i = 0; i < maps_info["mapList"].Length; i++)
         {
@@ -138,7 +144,7 @@ namespace MyJson
             map.name = maps_info["mapList"][i]["name"];
             map.uid = maps_info["mapList"][i]["uid"];
             map.id = maps_info["mapList"][i]["mapId"];
-            campaign.mapid_to_array_index.Set(map.id, i);
+            campaign.mapid_to_maps_array_index.Set(map.id, i);
             map.download_url = maps_info["mapList"][i]["downloadUrl"];
             @map.campaign = campaign;
 
@@ -159,7 +165,7 @@ namespace MyJson
         for (uint i = 0; i < map_times.Length; i++)
         {
             uint j;
-            campaign.mapid_to_array_index.Get(map_times[i]["mapId"], j);
+            campaign.mapid_to_maps_array_index.Get(map_times[i]["mapId"], j);
             if (map_times[i]["accountId"] == Api::s314ke_id)
                 campaign.maps[j].s314ke_medal_time = map_times[i]["recordScore"]["time"];
             if (map_times[i]["accountId"] == Api::GetWSID())
