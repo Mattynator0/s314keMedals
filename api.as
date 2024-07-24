@@ -85,7 +85,6 @@ namespace Api
             while (!req.Finished()) yield();
 
             auto temp_json = req.Json();
-            temp_json["name"] = config[i]["name"];
             temp_json["shortName"] = config[i]["shortName"];
             other_campaigns_json["campaignList"].Add(temp_json);
         }
