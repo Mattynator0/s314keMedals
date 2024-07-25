@@ -18,8 +18,6 @@ class Browser
 	UI::Font@ base_normal_font;
 	UI::Font@ base_small_font;
 
-	CampaignManager@ campaign_manager;
-
 	Browser()
 	{
 		@s314ke_medal = UI::LoadTexture("s314ke_medal.png");
@@ -28,7 +26,7 @@ class Browser
 		@base_normal_font = UI::LoadFont("DroidSans.ttf", 20, -1, -1 , true, true, true);
 		@base_small_font = UI::LoadFont("DroidSans.ttf", 16, -1, -1 , true, true, true);
 
-		@campaign_manager = CampaignManager();
+		CampaignManager::Init();
 	}
 
 	void RenderMenu() 
@@ -79,18 +77,18 @@ class Browser
 		// ------------------------------------------------ RIGHT SIDE ------------------------------------------------
 		
 		// leave the right side empty until a campaign is chosen
-		if (campaign_manager.chosen is null)
+		if (CampaignManager::chosen is null)
 		{
 			UI::End(); // "s314ke Medals"
-		UI::PopStyleColor(5); // Separator and Button
+			UI::PopStyleColor(5); // Separator and Button
 			return;
 		}
 
-		if (!campaign_manager.chosen.maps_loaded)
+		if (!CampaignManager::chosen.maps_loaded)
 		{
 			UI::Text("Loading...");
 			UI::End(); // "s314ke Medals"
-		UI::PopStyleColor(5); // Separator and Button
+			UI::PopStyleColor(5); // Separator and Button
 			return;
 		}
 
@@ -135,7 +133,7 @@ class Browser
 			UI::PopFont();
 	
 			//UI::PushFont(base_normal_font);
-			//UI::Text(base_circle + " " + campaign_manager.GetAchievedMedalsCount() + " / " + campaign_manager.GetTotalMedalsCount());
+			//UI::Text(base_circle + " " + CampaignManager::GetAchievedMedalsCount() + " / " + CampaignManager::GetTotalMedalsCount());
 			//UI::PopFont();
 			UI::EndChild(); // "TitleTextWrapper"
 	
@@ -183,7 +181,7 @@ class Browser
 		const uint buttons_per_row = Math::Max(1, uint(UI::GetWindowSize().x / (button_size.x + 2 * button_padding)));
 
 		UI::BeginChild("TableWrapper", vec2(), false, UI::WindowFlags::NoScrollbar);
-		if (campaign_manager.IsEmpty(campaign_type))
+		if (!CampaignManager::campaigns_loaded[campaign_type])
 			UI::Text("Loading...");
 		else
 		{
@@ -194,7 +192,7 @@ class Browser
 				UI::PushStyleColor(UI::Col::ButtonActive, brightest_color);
 				UI::PushStyleVar(UI::StyleVar::FrameRounding, 10);
 
-				uint campaign_count = campaign_manager.GetCampaignsCount(campaign_type);
+				uint campaign_count = CampaignManager::GetCampaignsCount(campaign_type);
 
 				// button spacing (value of 'a' is fixed)
 				//  
@@ -207,7 +205,7 @@ class Browser
 				// 
 				for (uint i = 0; i < campaign_count; i++)
 				{
-					Campaign@ campaign = campaign_manager.GetCampaign(campaign_type, i);
+					Campaign@ campaign = CampaignManager::GetCampaign(campaign_type, i);
 					UI::TableNextColumn();
 					UI::Dummy(vec2(0, 2 * button_padding));
 						
@@ -221,7 +219,7 @@ class Browser
 					UI::PushID("CampaignButton" + tostring(i));
 					if (UI::Button("", button_size))
 					{
-						campaign_manager.ChooseCampaign(campaign_type, i);
+						CampaignManager::ChooseCampaign(campaign_type, i);
 					}
 					UI::PopID();
 					
@@ -278,15 +276,15 @@ class Browser
 			UI::BeginChild("CampaignName");
 			// center the text
 			vec2 container_size = UI::GetContentRegionAvail();
-			vec2 campaignname_text_size = Draw::MeasureString(campaign_manager.GetChosenCampaignName());
+			vec2 campaignname_text_size = Draw::MeasureString(CampaignManager::GetChosenCampaignName());
 			UI::SetCursorPos((container_size - campaignname_text_size) * 0.5f);
-			UI::Text(campaign_manager.GetChosenCampaignName()); // full campaign name
+			UI::Text(CampaignManager::GetChosenCampaignName()); // full campaign name
 			UI::EndChild(); // "CampaignName"
 			
 			UI::TableNextColumn();
 			UI::BeginChild("CampaignMedalCounter");
-			string medalcounter_text = base_circle + " " + tostring(campaign_manager.chosen.medals_achieved) 
-							   + " / " + tostring(campaign_manager.chosen.medals_total);
+			string medalcounter_text = base_circle + " " + tostring(CampaignManager::chosen.medals_achieved) 
+							   + " / " + tostring(CampaignManager::chosen.medals_total);
 			container_size = UI::GetContentRegionAvail();
 			vec2 medalcounter_text_size = Draw::MeasureString(medalcounter_text);
 			UI::SetCursorPos((container_size - medalcounter_text_size) * 0.5f + vec2(-10, 0)); // -10 to account for the refresh button
@@ -294,7 +292,7 @@ class Browser
 			UI::SameLine();
 			UI::PushFont(base_small_font);
 			if (UI::Button(Icons::Refresh)) {
-				startnew(CoroutineFunc(campaign_manager.ReloadChosenCampaignMaps));
+				startnew(CoroutineFunc(CampaignManager::ReloadChosenCampaignMaps));
 			}
 			UI::PopFont(); // small
 			UI::EndChild(); // "CampaignMedalCounter"
@@ -318,11 +316,11 @@ class Browser
 		UI::PushStyleColor(UI::Col::TableRowBg, vec4(.25, .25, .25, .2));
 		UI::PushFont(base_small_font);
 
-		uint n_columns = campaign_manager.chosen.type == CampaignType::Totd ? 7 
+		uint n_columns = CampaignManager::chosen.type == CampaignType::Totd ? 7 
 																			: 6;
 		if (UI::BeginTable("MapsTable", n_columns, UI::TableFlags::RowBg | UI::TableFlags::ScrollY | UI::TableFlags::PadOuterX))
 		{
-			if (campaign_manager.chosen.type == CampaignType::Totd)
+			if (CampaignManager::chosen.type == CampaignType::Totd)
 				UI::TableSetupColumn("##day", UI::TableColumnFlags::WidthFixed);
 			UI::TableSetupColumn("Name", UI::TableColumnFlags::WidthStretch, 2);
 			UI::TableSetupColumn("##padding", UI::TableColumnFlags::WidthFixed);
@@ -337,16 +335,16 @@ class Browser
 			UI::PushStyleColor(UI::Col::ButtonHovered, brighter_color);
 			UI::PushStyleColor(UI::Col::ButtonActive, brightest_color);
 
-			for (uint i = 0; i < campaign_manager.GetMapsCount(); i++)
+			for (uint i = 0; i < CampaignManager::GetMapsCount(); i++)
 			{
-				Map map = campaign_manager.GetMap(i);
+				Map map = CampaignManager::GetMap(i);
 				// skip if checkbox is ticked and medal is achieved or doesn't exist
 				if (show_only_unbeaten_medals && (map.MedalAchieved() || !map.MedalExists()))
 					continue;
 
 				UI::TableNextRow(UI::TableRowFlags::None, 30);
 
-				if (campaign_manager.chosen.type == CampaignType::Totd) 
+				if (CampaignManager::chosen.type == CampaignType::Totd) 
 				{
 					UI::TableNextColumn(); // day
 					UI::AlignTextToFramePadding();

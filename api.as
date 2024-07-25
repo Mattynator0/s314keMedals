@@ -89,13 +89,11 @@ namespace Api
             other_campaigns_json["campaignList"].Add(temp_json);
         }
 
-        //Json::ToFile(MyJson::test_path, other_campaigns_json);
-
         MyJson::LoadCampaignListFromJson(other_campaigns_json, campaigns, CampaignType::Other);
     }
 
     bool load_maps_lock = false;
-    void LoadMaps(Campaign@ campaign) // TODO adapt to the new campaign type
+    void LoadMaps(Campaign@ campaign)
     {
         while (load_maps_lock) yield(); // prevents loading the same campaign multiple times after spamming the button before the flag is set
 

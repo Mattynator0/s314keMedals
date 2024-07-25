@@ -72,56 +72,59 @@ namespace MyJson
         // save the json for caching purposes
         campaign_jsons[campaign_type] = json;
         Json::ToFile(json_paths[campaign_type], campaign_jsons[campaign_type]);
-        
+        // TODO use this data before new campaign data is fetched
+
         if (campaign_type == CampaignType::Nadeo)
         {
-            auto @nadeo_json = campaign_jsons[CampaignType::Nadeo];
-            for (uint i = 0; i < nadeo_json["campaignList"].Length; i++)
+            auto @campaign_json = campaign_jsons[CampaignType::Nadeo];
+            for (uint i = 0; i < campaign_json["campaignList"].Length; i++)
             {
-                Campaign campaign(nadeo_json["campaignList"][i]["name"], campaign_type, i);
+                Campaign campaign(campaign_json["campaignList"][i]["name"], campaign_type, i);
 
                 campaigns.InsertLast(campaign);
             }
         }
         else if (campaign_type == CampaignType::Totd)
         {
-            auto @totd_json = campaign_jsons[CampaignType::Totd];
+            auto @campaign_json = campaign_jsons[CampaignType::Totd];
             array<string> month_names = {"January", "February", "March", "April", "May", "June", 
                                          "July", "August", "September", "October", "November", "December"};
-            for (uint i = 0; i < totd_json["monthList"].Length; i++)
+            for (uint i = 0; i < campaign_json["monthList"].Length; i++)
             {
-                Campaign campaign(month_names[uint(totd_json["monthList"][i]["month"]) - 1] // -1 because in the json, January is 1
-                                    + " " + tostring(uint(totd_json["monthList"][i]["year"])), campaign_type, i);
+                Campaign campaign(month_names[uint(campaign_json["monthList"][i]["month"]) - 1] // -1 because in the json, January is 1
+                                    + " " + tostring(uint(campaign_json["monthList"][i]["year"])), campaign_type, i);
 
                 campaigns.InsertLast(campaign);
             }
         }
         else if (campaign_type == CampaignType::Other)
         {
-            auto @other_json = campaign_jsons[CampaignType::Other];
-            for (uint i = 0; i < other_json["campaignList"].Length; i++)
+            auto @campaign_json = campaign_jsons[CampaignType::Other];
+            for (uint i = 0; i < campaign_json["campaignList"].Length; i++)
             {
-                Campaign campaign(other_json["campaignList"][i]["name"], campaign_type, i, other_json["campaignList"][i]["shortName"]);
+                Campaign campaign(campaign_json["campaignList"][i]["name"], campaign_type, i, campaign_json["campaignList"][i]["shortName"]);
 
                 campaigns.InsertLast(campaign);
             }
         }
+        
+        CampaignManager::campaigns_loaded[campaign_type] = true;
     }
 
     string GetMapUidsAsString(Campaign@ campaign)
     {
         string result = "";
-        Json::Value json = campaign_jsons[campaign.type];
+        Json::Value @json;
         switch (campaign.type)
         {
             case CampaignType::Nadeo:
-                json = json["campaignList"][campaign.json_index]["playlist"];
+                @json = campaign_jsons[campaign.type]["campaignList"][campaign.json_index]["playlist"];
                 break;
             case CampaignType::Totd:
-                json = json["monthList"][campaign.json_index]["days"];
+                @json = campaign_jsons[campaign.type]["monthList"][campaign.json_index]["days"];
                 break;
             case CampaignType::Other:
-                json = json["campaignList"][campaign.json_index]["campaign"]["playlist"];
+                @json = campaign_jsons[campaign.type]["campaignList"][campaign.json_index]["campaign"]["playlist"];
                 break;
         }
 

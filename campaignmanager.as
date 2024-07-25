@@ -1,17 +1,27 @@
-class CampaignManager
+namespace CampaignManager
 {
+    bool initialized = false;
+
     array<array<Campaign@>> campaigns;
 	Campaign@ chosen;
+    array<bool> campaigns_loaded;
 
     //uint medals_achieved = 0;
     //uint medals_total = 0;
     //bool medals_counts_uptodate = true;
 
-    CampaignManager()
+    void Init()
     {
+        for (uint i = 0; i < CampaignType::Count; i++) 
+        {
+            campaigns_loaded.InsertLast(false);
+        }
+
         MyJson::LoadPluginStorageData();
         MyJson::InitCampaignList(campaigns);
         MyJson::SavePluginStorageData();
+
+        initialized = true;
     }
 
     void ChooseCampaign(const CampaignType&in campaign_type, uint index)
@@ -31,11 +41,6 @@ class CampaignManager
     {
         chosen.maps_loaded = false;
         Api::LoadMaps(chosen);
-    }
-
-    bool IsEmpty(const CampaignType&in campaign_type)
-    {
-        return campaigns[campaign_type].IsEmpty();
     }
 
     uint GetCampaignsCount(const CampaignType&in campaign_type)

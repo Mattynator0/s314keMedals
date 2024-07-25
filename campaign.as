@@ -22,9 +22,9 @@ class Campaign
     Campaign(const string&in name, const CampaignType&in type, uint json_index, const string&in short_name = "")
     {
         this.name = name;
+        this.type = type;
         this.short_name = (type != CampaignType::Other) ? CreateShortName() : short_name;
         maps_loaded = false;
-        this.type = type;
         this.json_index = json_index;
     }
 
