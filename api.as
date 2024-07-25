@@ -6,6 +6,10 @@ namespace Api
     string GetRecordsReqUrlBase() { return "https://prod.trackmania.core.nadeo.online/v2/mapRecords/?accountIdList=" 
                                         + GetWSID() + "," + s314ke_id + "&mapId=";}
     
+    // -----------------------------------------------------------------------------------------------
+    // ------------------------------------- PB UPDATE COROUTINE -------------------------------------
+    // -----------------------------------------------------------------------------------------------
+
     void WatchForMapChange() 
     {
         string current_map_uid;
@@ -38,64 +42,90 @@ namespace Api
         MyJson::map_uid_to_handle.Get(last_map_uid, @last_map);
         string req_url = GetRecordsReqUrlBase() + last_map.id;
 
-        LoadCampaignRecordsCoroutineData map_data(req_url, last_map.campaign);
-        startnew(LoadCampaignRecordsCoroutine, map_data);
+        LoadMapsRecordsCoroutineData map_data(req_url, last_map.campaign);
+        startnew(LoadMapsRecordsCoroutine, map_data);
     }
 
-    void LoadCampaignList(array<Campaign@>@ campaigns, const CampaignType&in campaign_type)
-    {
-        if (campaign_type == CampaignType::Other) 
-        {
-            LoadCampaignListOther(campaigns);
-            return;
-        }
+    // -------------------------------------------------------------------------------------------------
+    // ------------------------------------- LOADING CAMPAIGNS DATA -------------------------------------
+    // -------------------------------------------------------------------------------------------------
 
+    void LoadListOfCampaigns(array<Campaign@>@ campaigns, const CampaignType&in campaign_type)
+    {
         string req_url;
         if (campaign_type == CampaignType::Nadeo)
             req_url = "https://live-services.trackmania.nadeo.live/api/token/campaign/official?offset=0&length=1000"; // 1000 to get all of them
         else if (campaign_type == CampaignType::Totd)
             req_url = "https://live-services.trackmania.nadeo.live/api/token/campaign/month?offset=0&length=1000"; // 1000 to get all of them
+        else if (campaign_type == CampaignType::Other)
+            req_url = "https://openplanet.dev/plugin/s314kemedals/config/other_campaigns";
 
-        auto req = NadeoServices::Get("NadeoLiveServices", req_url);
+        LoadListOfCampaignsCoroutineData data(req_url, campaigns, campaign_type);
+        if (campaign_type == CampaignType::Other)
+            startnew(CoroutineFuncUserdata(LoadListOfCampaignsCoroutineOther), data);
+        else
+            startnew(CoroutineFuncUserdata(LoadListOfCampaignsCoroutine), data);
+    }
+
+    class LoadListOfCampaignsCoroutineData
+    {
+        string req_url;
+        array<Campaign@>@ campaigns;
+        CampaignType campaign_type;
+
+        LoadListOfCampaignsCoroutineData(const string &in req_url, array<Campaign@>@ campaigns, const CampaignType&in campaign_type) {
+            this.req_url = req_url;
+            @this.campaigns = campaigns;
+            this.campaign_type = campaign_type;
+        }
+    }
+
+    void LoadListOfCampaignsCoroutine(ref@ _data)
+    {
+        auto data = cast<LoadListOfCampaignsCoroutineData>(_data);
+
+        auto @req = NadeoServices::Get("NadeoLiveServices", data.req_url);
         req.Start();
         while (!req.Finished()) yield();
 
-        MyJson::LoadCampaignListFromJson(req.Json(), campaigns, campaign_type);
+        MyJson::LoadListOfCampaignsFromJson(req.Json(), data.campaigns, data.campaign_type);
     }
 
-    void LoadCampaignListOther(array<Campaign@>@ campaigns)
+    void LoadListOfCampaignsCoroutineOther(ref@ _data)
     {
-        string req_url = "https://openplanet.dev/plugin/s314kemedals/config/other_campaigns";
-        auto @op_req = Net::HttpGet(req_url);
+        auto data = cast<LoadListOfCampaignsCoroutineData>(_data);
+
+        auto @op_req = Net::HttpGet(data.req_url);
         while (!op_req.Finished()) yield();
 
         Json::Value config = op_req.Json();
-        Json::Value@ other_campaigns_json = Json::Object();
-        other_campaigns_json["campaignList"] = Json::Array();
         for (uint i = 0; i < config.Length; i++)
         {
-            req_url = "https://live-services.trackmania.nadeo.live/api/token/club/";
-            req_url += config[i]["clubID"];
-            req_url += "/campaign/";
-            req_url += config[i]["campaignID"];
+            data.req_url = "https://live-services.trackmania.nadeo.live/api/token/club/";
+            data.req_url += config[i]["clubID"];
+            data.req_url += "/campaign/";
+            data.req_url += config[i]["campaignID"];
 
-            // FIXME this is fine for very few campaigns, otherwise it's too slow to do it one by one
-            auto @req = NadeoServices::Get("NadeoLiveServices", req_url);
+            // TODO if this is done by coroutines, the list of campaigns will have to be sorted or else the order will change every time
+            auto @req = NadeoServices::Get("NadeoLiveServices", data.req_url);
             req.Start();
             while (!req.Finished()) yield();
 
-            auto temp_json = req.Json();
-            temp_json["shortName"] = config[i]["shortName"];
-            other_campaigns_json["campaignList"].Add(temp_json);
+            auto other_json = req.Json();
+            other_json["shortName"] = config[i]["shortName"];
+            MyJson::LoadListOfCampaignsFromJson(other_json, data.campaigns, CampaignType::Other);
         }
-
-        MyJson::LoadCampaignListFromJson(other_campaigns_json, campaigns, CampaignType::Other);
     }
+
+    // ---------------------------------------------------------------------------------------------
+    // ------------------------------------- LOADING MAPS DATA -------------------------------------
+    // ---------------------------------------------------------------------------------------------
 
     bool load_maps_lock = false;
     void LoadMaps(Campaign@ campaign)
     {
-        while (load_maps_lock) yield(); // prevents loading the same campaign multiple times after spamming the button before the flag is set
+        // prevents loading the same campaign multiple times after spamming the button before the 'maps_loaded' flag is set
+        while (load_maps_lock) yield();
 
         if (campaign.maps_loaded) return;
         load_maps_lock = true;
@@ -110,41 +140,41 @@ namespace Api
         
         MyJson::LoadCampaignContents(campaign, req.Json());
 
-        LoadCampaignRecords(campaign);
+        LoadMapsRecords(campaign);
 
         campaign.maps_loaded = true;
         load_maps_lock = false;
         campaign.RecalculateMedalsCounts();
     }
 
-    class LoadCampaignRecordsCoroutineData
-    {
-        string req_url;
-        Campaign@ campaign;
-
-        LoadCampaignRecordsCoroutineData(const string &in req_url, Campaign@ campaign) {
-            this.req_url = req_url;
-            @this.campaign = campaign;
-        }
-    }
-
-    void LoadCampaignRecords(Campaign@ campaign)
+    void LoadMapsRecords(Campaign@ campaign)
     {
         for (uint i = 0; i < campaign.maps.Length; i++)
         {
             string req_url = GetRecordsReqUrlBase();
             req_url += campaign.maps[i].id;
 
-            LoadCampaignRecordsCoroutineData coroutine_data(req_url, campaign);
+            LoadMapsRecordsCoroutineData coroutine_data(req_url, campaign);
 
-            startnew(CoroutineFuncUserdata(LoadCampaignRecordsCoroutine), coroutine_data);
+            startnew(CoroutineFuncUserdata(LoadMapsRecordsCoroutine), coroutine_data);
+        }
+    }
+
+    class LoadMapsRecordsCoroutineData
+    {
+        string req_url;
+        Campaign@ campaign;
+
+        LoadMapsRecordsCoroutineData(const string &in req_url, Campaign@ campaign) {
+            this.req_url = req_url;
+            @this.campaign = campaign;
         }
     }
 
     // requests records for a single map and puts them into a data structure
-    void LoadCampaignRecordsCoroutine(ref@ _data) 
+    void LoadMapsRecordsCoroutine(ref@ _data) 
     {
-        auto data = cast<LoadCampaignRecordsCoroutineData>(_data);
+        auto data = cast<LoadMapsRecordsCoroutineData>(_data);
 
         Net::HttpRequest@ req = NadeoServices::Get("NadeoServices", data.req_url);
         // the line below should be used if I ever decide to add a global medal counter (meaning 1000+ API calls when activating the plugin)

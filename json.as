@@ -30,20 +30,21 @@ namespace MyJson
         // }
     }
 
-    void InitCampaignList(array<array<Campaign@>>@ campaigns_master_array)
+    void InitCampaigns(array<array<Campaign@>>@ campaigns_master_array) // TODO use direct access through the namespace instead
     {
         for (uint i = 0; i < CampaignType::Count; i++) 
         {
             campaigns_master_array.InsertLast(array<Campaign@>());
             campaign_jsons.InsertLast(Json::Object());
         }
+        campaign_jsons[CampaignType::Other]["campaignList"] = Json::Array();
 
         // TODO make use of caching
         if (reload_campaigns)
         {
             for (uint i = 0; i < CampaignType::Count; i++) 
             {
-                Api::LoadCampaignList(campaigns_master_array[i], CampaignType(i));
+                Api::LoadListOfCampaigns(campaigns_master_array[i], CampaignType(i));
             }
             return;
         }
@@ -67,10 +68,18 @@ namespace MyJson
         //     Api::LoadCampaigns(totd, CampaignType::Totd);
     }
 
-    void LoadCampaignListFromJson(Json::Value@ json, array<Campaign@>@ campaigns, const CampaignType&in campaign_type)
+    void LoadListOfCampaignsFromJson(Json::Value@ json, array<Campaign@>@ campaigns, const CampaignType&in campaign_type)
     {
         // save the json for caching purposes
-        campaign_jsons[campaign_type] = json;
+        int other_index;
+        if (campaign_type == CampaignType::Other)
+        {
+            other_index = campaign_jsons[campaign_type]["campaignList"].Length;
+            campaign_jsons[campaign_type]["campaignList"].Add(json);
+        }
+        else
+            campaign_jsons[campaign_type] = json;
+
         Json::ToFile(json_paths[campaign_type], campaign_jsons[campaign_type]);
         // TODO use this data before new campaign data is fetched
 
@@ -99,13 +108,9 @@ namespace MyJson
         }
         else if (campaign_type == CampaignType::Other)
         {
-            auto @campaign_json = campaign_jsons[CampaignType::Other];
-            for (uint i = 0; i < campaign_json["campaignList"].Length; i++)
-            {
-                Campaign campaign(campaign_json["campaignList"][i]["name"], campaign_type, i, campaign_json["campaignList"][i]["shortName"]);
+            Campaign campaign(json["name"], campaign_type, other_index, json["shortName"]);
 
-                campaigns.InsertLast(campaign);
-            }
+            campaigns.InsertLast(campaign);
         }
         
         CampaignManager::campaigns_loaded[campaign_type] = true;

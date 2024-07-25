@@ -18,7 +18,7 @@ namespace CampaignManager
         }
 
         MyJson::LoadPluginStorageData();
-        MyJson::InitCampaignList(campaigns);
+        MyJson::InitCampaigns(campaigns);
         MyJson::SavePluginStorageData();
 
         initialized = true;
