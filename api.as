@@ -6,6 +6,12 @@ namespace Api
     string GetRecordsReqUrlBase() { return "https://prod.trackmania.core.nadeo.online/v2/mapRecords/?accountIdList=" 
                                         + GetWSID() + "," + s314ke_id + "&mapId=";}
     
+    void AddUserAgent(Net::HttpRequest@ req)
+    {
+        req.Headers['User-Agent'] = "Openplanet plugin: " + Meta::ExecutingPlugin().Name + 
+                                    " / made by " + Meta::ExecutingPlugin().Author + " / contact: mm6205@duck.com";
+    }
+
     // -----------------------------------------------------------------------------------------------
     // ------------------------------------- PB UPDATE COROUTINE -------------------------------------
     // -----------------------------------------------------------------------------------------------
@@ -85,6 +91,7 @@ namespace Api
         auto data = cast<LoadListOfCampaignsCoroutineData>(_data);
 
         auto @req = NadeoServices::Get("NadeoLiveServices", data.req_url);
+        AddUserAgent(req);
         req.Start();
         while (!req.Finished()) yield();
 
@@ -101,13 +108,12 @@ namespace Api
         Json::Value config = op_req.Json();
         for (uint i = 0; i < config.Length; i++)
         {
-            data.req_url = "https://live-services.trackmania.nadeo.live/api/token/club/";
-            data.req_url += config[i]["clubID"];
-            data.req_url += "/campaign/";
-            data.req_url += config[i]["campaignID"];
+            data.req_url = "https://live-services.trackmania.nadeo.live/api/token/club/" +
+                        string(config[i]["clubID"]) + "/campaign/" + string(config[i]["campaignID"]);
 
             // TODO if this is done by coroutines, the list of campaigns will have to be sorted or else the order will change every time
             auto @req = NadeoServices::Get("NadeoLiveServices", data.req_url);
+            AddUserAgent(req);
             req.Start();
             while (!req.Finished()) yield();
 
@@ -135,20 +141,23 @@ namespace Api
         req_url += MyJson::GetMapUidsAsString(campaign);
 
         Net::HttpRequest@ req = NadeoServices::Get("NadeoLiveServices", req_url);
+        AddUserAgent(req);
         req.Start();
         while (!req.Finished()) yield();
         
         MyJson::LoadCampaignContents(campaign, req.Json());
 
         LoadMapsRecords(campaign);
-
         campaign.maps_loaded = true;
         load_maps_lock = false;
         campaign.RecalculateMedalsCounts();
+
+        MyJson::SaveMapsDataToJson(campaign);
     }
 
     void LoadMapsRecords(Campaign@ campaign)
     {
+        campaign.coroutines_running = campaign.maps.Length;
         for (uint i = 0; i < campaign.maps.Length; i++)
         {
             string req_url = GetRecordsReqUrlBase();
@@ -177,11 +186,18 @@ namespace Api
         auto data = cast<LoadMapsRecordsCoroutineData>(_data);
 
         Net::HttpRequest@ req = NadeoServices::Get("NadeoServices", data.req_url);
-        // the line below should be used if I ever decide to add a global medal counter (meaning 1000+ API calls when activating the plugin)
-        // req.Headers['User-Agent'] = "contact here";
+        AddUserAgent(req);
         req.Start();
         while (!req.Finished()) yield();
         
         MyJson::LoadMapRecords(data.campaign, req);
+        
+        data.campaign.RecalculateMedalsCounts();
+        data.campaign.coroutines_running--;
+        // save records data when all coroutines finish
+        if (data.campaign.coroutines_running == 0)
+        {
+            MyJson::SaveMapsDataToJson(data.campaign);
+        }
     }
 }

@@ -1,50 +1,88 @@
 namespace MyJson
 {
-    // Json::Value data_json = Json::Object();
     array<Json::Value> campaign_jsons;
-
-    // const string data_path = IO::FromStorageFolder("s314kemedal.json");
-    const array<string> json_paths = {  IO::FromStorageFolder("nadeo.json"),
-                                        IO::FromStorageFolder("totd.json"),
-                                        IO::FromStorageFolder("other.json") };
     const string test_path = IO::FromStorageFolder("test.json");
 
     dictionary map_uid_to_handle;
-
     bool reload_campaigns = true;
+
+    // ----------------------------------------------------------------------------------------
+    // ------------------------------------- DATA CACHING -------------------------------------
+    // ----------------------------------------------------------------------------------------
+
+    void CreatePluginStorageFolders()
+    {
+        if (!IO::FolderExists(IO::FromStorageFolder("campaigns")))
+            IO::CreateFolder(IO::FromStorageFolder("campaigns"));
+        if (!IO::FolderExists(IO::FromStorageFolder("maps")))
+            IO::CreateFolder(IO::FromStorageFolder("maps"));
+        for (uint i = 0; i < CampaignType::Count; i++)
+        {
+            if (!IO::FolderExists(IO::FromStorageFolder("maps/" + tostring(CampaignType(i)))))
+                IO::CreateFolder(IO::FromStorageFolder("maps/" + tostring(CampaignType(i))));
+        }
+    }
+
+    void SaveMapsDataToJson(Campaign@ campaign)
+    {
+        Json::Value save_json = Json::Array();
+
+        for (uint i = 0; i < campaign.maps.Length; i++)
+        {
+            save_json.Add(Json::Object());
+            save_json[i]["uid"] = campaign.maps[i].uid;
+            save_json[i]["id"] = campaign.maps[i].id;
+            save_json[i]["name"] = campaign.maps[i].name;
+            save_json[i]["s314keMedal"] = campaign.maps[i].s314ke_medal_time;
+            save_json[i]["pb"] = campaign.maps[i].pb_time;
+            save_json[i]["downloadUrl"] = campaign.maps[i].download_url;
+        }
+
+        string save_path = IO::FromStorageFolder("maps/" + tostring(campaign.type) + "/" + campaign.file_name + ".json");
+        Json::ToFile(save_path, save_json);
+    }
+
+    void LoadMapsDataFromJson(Campaign@ campaign)
+    {
+        string save_path = IO::FromStorageFolder("maps/" + tostring(campaign.type) + "/" + campaign.file_name + ".json");
+        if (!IO::FileExists(save_path)) 
+            return;
+
+        Json::Value loaded_json = Json::FromFile(save_path);
+        campaign.maps.Resize(0);
+        for (uint i = 0; i < loaded_json.Length; i++)
+        {
+            Map map;
+            map.uid = loaded_json[i]["uid"];
+            map.id = loaded_json[i]["id"];
+            map.name = loaded_json[i]["name"];
+            map.s314ke_medal_time = loaded_json[i]["s314keMedal"];
+            map.pb_time = loaded_json[i]["pb"];
+            map.download_url = loaded_json[i]["downloadUrl"];
+            @map.campaign = campaign;
+            campaign.maps.InsertLast(map);
+        }
+        campaign.maps_loaded = true;
+    }
     
-    void SavePluginStorageData()
-    {
-        // for future use
+    // ----------------------------------------------------------------------------------------------------
+    // ------------------------------------- CAMPAIGNS INITIALIZATION -------------------------------------
+    // ----------------------------------------------------------------------------------------------------
 
-        // Json::ToFile(data_path, data_json);
-    }
-
-    void LoadPluginStorageData()
-    {
-        // for future use
-        
-        // if (IO::FileExists(data_path))
-        // {
-        //     data_json = Json::FromFile(data_path);
-        // }
-    }
-
-    void InitCampaigns(array<array<Campaign@>>@ campaigns_master_array) // TODO use direct access through the namespace instead
+    void InitCampaigns()
     {
         for (uint i = 0; i < CampaignType::Count; i++) 
         {
-            campaigns_master_array.InsertLast(array<Campaign@>());
+            CampaignManager::campaigns_master_array.InsertLast(array<Campaign@>());
             campaign_jsons.InsertLast(Json::Object());
         }
         campaign_jsons[CampaignType::Other]["campaignList"] = Json::Array();
 
-        // TODO make use of caching
         if (reload_campaigns)
         {
             for (uint i = 0; i < CampaignType::Count; i++) 
             {
-                Api::LoadListOfCampaigns(campaigns_master_array[i], CampaignType(i));
+                Api::LoadListOfCampaigns(CampaignManager::campaigns_master_array[i], CampaignType(i));
             }
             return;
         }
@@ -57,39 +95,29 @@ namespace MyJson
         // }
         // else 
         //     Api::LoadCampaigns(nadeo, CampaignType::Nadeo);
-
-        // if (IO::FileExists(totd_path))
-        // {
-        //     totd_json = Json::FromFile(totd_path);
-
-        //     LoadCampaignsFromJson(totd, CampaignType::Totd);
-        // }
-        // else 
-        //     Api::LoadCampaigns(totd, CampaignType::Totd);
     }
 
     void LoadListOfCampaignsFromJson(Json::Value@ json, array<Campaign@>@ campaigns, const CampaignType&in campaign_type)
     {
-        // save the json for caching purposes
         int other_index;
         if (campaign_type == CampaignType::Other)
         {
+            // already keep track of the index because more jsons may get added before the index is used
             other_index = campaign_jsons[campaign_type]["campaignList"].Length;
             campaign_jsons[campaign_type]["campaignList"].Add(json);
         }
         else
             campaign_jsons[campaign_type] = json;
 
-        Json::ToFile(json_paths[campaign_type], campaign_jsons[campaign_type]);
-        // TODO use this data before new campaign data is fetched
+        Json::ToFile(IO::FromStorageFolder("campaigns/" + tostring(campaign_type) + ".json"), campaign_jsons[campaign_type]);
 
         if (campaign_type == CampaignType::Nadeo)
         {
             auto @campaign_json = campaign_jsons[CampaignType::Nadeo];
             for (uint i = 0; i < campaign_json["campaignList"].Length; i++)
             {
-                Campaign campaign(campaign_json["campaignList"][i]["name"], campaign_type, i);
-
+                string name = campaign_json["campaignList"][i]["name"];
+                Campaign campaign(name, name, campaign_type, i);
                 campaigns.InsertLast(campaign);
             }
         }
@@ -100,21 +128,25 @@ namespace MyJson
                                          "July", "August", "September", "October", "November", "December"};
             for (uint i = 0; i < campaign_json["monthList"].Length; i++)
             {
-                Campaign campaign(month_names[uint(campaign_json["monthList"][i]["month"]) - 1] // -1 because in the json, January is 1
-                                    + " " + tostring(uint(campaign_json["monthList"][i]["year"])), campaign_type, i);
-
+                string name = month_names[uint(campaign_json["monthList"][i]["month"]) - 1] // -1 because in the json, January is 1
+                                    + " " + Json::Write(campaign_json["monthList"][i]["year"]);
+                Campaign campaign(name, name, campaign_type, i);
                 campaigns.InsertLast(campaign);
             }
         }
         else if (campaign_type == CampaignType::Other)
         {
-            Campaign campaign(json["name"], campaign_type, other_index, json["shortName"]);
-
+            string file_name = string(json["name"]) + " " + Json::Write(json["campaignId"]);
+            Campaign campaign(json["name"], file_name, campaign_type, other_index, json["shortName"]);
             campaigns.InsertLast(campaign);
         }
         
         CampaignManager::campaigns_loaded[campaign_type] = true;
     }
+
+    // -----------------------------------------------------------------------------------------------
+    // ------------------------------------- MAPS INITIALIZATION -------------------------------------
+    // -----------------------------------------------------------------------------------------------
 
     string GetMapUidsAsString(Campaign@ campaign)
     {
@@ -166,7 +198,7 @@ namespace MyJson
     {
         Json::Value map_times = req.Json();
         if (map_times.GetType() == Json::Type::Object && map_times.HasKey("message")) {
-            warn("LoadMapRecords: API request returned an error message: " + string(map_times["message"]));
+            error("LoadMapRecords: API request returned an error message: " + string(map_times["message"]));
             return;
         }
 
@@ -179,6 +211,5 @@ namespace MyJson
             if (map_times[i]["accountId"] == Api::GetWSID())
                 campaign.maps[j].pb_time = map_times[i]["recordScore"]["time"];
         }
-        campaign.RecalculateMedalsCounts();
     }
 }

@@ -2,7 +2,7 @@ namespace CampaignManager
 {
     bool initialized = false;
 
-    array<array<Campaign@>> campaigns;
+    array<array<Campaign@>> campaigns_master_array;
 	Campaign@ chosen;
     array<bool> campaigns_loaded;
 
@@ -17,10 +17,7 @@ namespace CampaignManager
             campaigns_loaded.InsertLast(false);
         }
 
-        MyJson::LoadPluginStorageData();
-        MyJson::InitCampaigns(campaigns);
-        MyJson::SavePluginStorageData();
-
+        MyJson::InitCampaigns();
         initialized = true;
     }
 
@@ -45,12 +42,12 @@ namespace CampaignManager
 
     uint GetCampaignsCount(const CampaignType&in campaign_type)
     {
-        return campaigns[campaign_type].Length;
+        return campaigns_master_array[campaign_type].Length;
     }
 
     Campaign@ GetCampaign(const CampaignType&in campaign_type, uint index)
     {
-        return campaigns[campaign_type][index];
+        return campaigns_master_array[campaign_type][index];
     }
 
     string GetChosenCampaignName()

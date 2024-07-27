@@ -11,6 +11,8 @@ void Main()
 	NadeoServices::AddAudience("NadeoServices");
     while (!NadeoServices::IsAuthenticated("NadeoServices")) yield();
 
+	MyJson::CreatePluginStorageFolders();
+
 	@browser = Browser();
 	startnew(Api::WatchForMapChange);
 }

@@ -8,24 +8,32 @@ enum CampaignType
 
 class Campaign
 {
-    uint json_index;
     string name;
+    CampaignType type;
+    string file_name;
+    uint json_index;
     string short_name;
+
     array<Map> maps;
     bool maps_loaded;
-    CampaignType type;
     dictionary mapid_to_maps_array_index;
+
+    uint coroutines_running = 0;
 
     uint medals_achieved = 0;
     uint medals_total = 0;
 
-    Campaign(const string&in name, const CampaignType&in type, uint json_index, const string&in short_name = "")
+    Campaign(const string&in name, const string&in file_name, const CampaignType&in type, uint json_index, const string&in short_name = "")
     {
         this.name = name;
+        this.file_name = file_name;
         this.type = type;
+        this.json_index = json_index;
         this.short_name = (type != CampaignType::Other) ? CreateShortName() : short_name;
         maps_loaded = false;
-        this.json_index = json_index;
+
+        MyJson::LoadMapsDataFromJson(@this);
+        RecalculateMedalsCounts();
     }
 
     private string CreateShortName()
