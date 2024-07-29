@@ -21,7 +21,7 @@ void Main()
 
 void RenderInterface()
 {
-	if (browser is null)
+	if (browser is null && show_browser_window)
 	{
 		UI::SetNextWindowSize(100, 60);
 		UI::Begin("s314ke Medals");
