@@ -1,5 +1,5 @@
 [Setting hidden]
-bool show_browser_window = false;
+bool show_browser_window = true;
 
 class Browser
 {
