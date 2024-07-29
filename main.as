@@ -1,3 +1,5 @@
+// s314ke Medals by Mattynator
+
 Browser@ browser;
 bool user_has_permissions;
 
