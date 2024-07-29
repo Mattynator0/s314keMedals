@@ -86,20 +86,11 @@ namespace MyJson
             }
             return;
         }
-
-        // if (IO::FileExists(nadeo_path))
-        // {
-        //     nadeo_json = Json::FromFile(nadeo_path);
-
-        //     LoadCampaignsFromJson(nadeo, CampaignType::Nadeo);
-        // }
-        // else 
-        //     Api::LoadCampaigns(nadeo, CampaignType::Nadeo);
     }
 
     void LoadListOfCampaignsFromJson(Json::Value@ json, array<Campaign@>@ campaigns, const CampaignType&in campaign_type)
     {
-        int other_index;
+        uint other_index;
         if (campaign_type == CampaignType::Other)
         {
             // already keep track of the index because more jsons may get added before the index is used
