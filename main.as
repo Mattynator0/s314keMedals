@@ -22,12 +22,15 @@ void Main()
 
 void RenderInterface()
 {
-	if (browser is null && show_browser_window)
+	if (browser is null)
 	{
-		UI::SetNextWindowSize(100, 60);
-		UI::Begin("s314ke Medals");
-		UI::Text("Loading...");
-		UI::End();
+		if (show_browser_window)
+		{
+			UI::SetNextWindowSize(100, 60);
+			UI::Begin("s314ke Medals");
+			UI::Text("Loading...");
+			UI::End();
+		}
 		return;
 	}
 	browser.Draw();
