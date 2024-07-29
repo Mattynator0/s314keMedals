@@ -37,6 +37,13 @@ namespace CampaignManager
 
     void ReloadChosenCampaignMaps()
     {
+        if (chosen.type == CampaignType::Other)
+        {
+            chosen.maps_loaded = false;
+            startnew(CoroutineFunc(LoadChosenCampaignMaps));
+            return;
+        }
+
         if (!medals_calculating[chosen.type]) // prevent setting the flag back to false after the maps already got loaded by a different coroutine
         {
             chosen.maps_loaded = false;
