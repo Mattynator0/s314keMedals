@@ -24,7 +24,7 @@ namespace CampaignManager
 
     void ChooseCampaign(const CampaignType&in campaign_type, uint index)
     {
-        @chosen = GetCampaign(campaign_type, index);
+        @chosen = campaigns_master_array[campaign_type][index];
 
         if (!chosen.maps_loaded)
             startnew(CoroutineFunc(LoadChosenCampaignMaps));
@@ -40,6 +40,16 @@ namespace CampaignManager
         chosen.maps_loaded = false;
         medals_counts_uptodate[chosen.type] = false;
         UpdateMedalsCounts(chosen.type);
+    }
+
+    void ReloadAllCampaignMaps(const CampaignType&in campaign_type)
+    {
+        for (uint i = 0; i < campaigns_master_array[campaign_type].Length; i++)
+        {
+            campaigns_master_array[campaign_type][i].maps_loaded = false;
+        }
+        medals_counts_uptodate[campaign_type] = false;
+        UpdateMedalsCounts(campaign_type);
     }
 
     void UpdateMedalsCounts(const CampaignType&in campaign_type)
@@ -91,11 +101,6 @@ namespace CampaignManager
     uint GetCampaignsCount(const CampaignType&in campaign_type)
     {
         return campaigns_master_array[campaign_type].Length;
-    }
-
-    Campaign@ GetCampaign(const CampaignType&in campaign_type, uint index)
-    {
-        return campaigns_master_array[campaign_type][index];
     }
 
     string GetChosenCampaignName()

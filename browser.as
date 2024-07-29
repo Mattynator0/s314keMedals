@@ -151,7 +151,7 @@ class Browser
 				UI::SameLine();
 				UI::PushFont(base_small_font);
 				if (UI::Button(Icons::Refresh)) {
-					CampaignManager::UpdateMedalsCounts(current_tab);
+					CampaignManager::ReloadAllCampaignMaps(current_tab);
 				}
 				UI::PopFont(); // small
 				if (CampaignManager::medals_calculating[current_tab])
