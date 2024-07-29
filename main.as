@@ -13,6 +13,7 @@ void Main()
 	NadeoServices::AddAudience("NadeoServices");
     while (!NadeoServices::IsAuthenticated("NadeoServices")) yield();
 
+	MyJson::DeleteLegacyPluginStorageFiles();
 	MyJson::CreatePluginStorageFolders();
 
 	@browser = Browser();

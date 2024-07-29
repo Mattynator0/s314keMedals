@@ -10,6 +10,14 @@ namespace MyJson
     // ------------------------------------- DATA CACHING -------------------------------------
     // ----------------------------------------------------------------------------------------
 
+    void DeleteLegacyPluginStorageFiles()
+    {
+        if (IO::FileExists(IO::FromStorageFolder("nadeo.json")))
+            IO::Delete(IO::FromStorageFolder("nadeo.json"));
+        if (IO::FileExists(IO::FromStorageFolder("totd.json")))
+            IO::Delete(IO::FromStorageFolder("totd.json"));
+    }
+
     void CreatePluginStorageFolders()
     {
         if (!IO::FolderExists(IO::FromStorageFolder("campaigns")))
