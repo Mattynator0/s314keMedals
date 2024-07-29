@@ -3,10 +3,10 @@ bool show_browser_window = false;
 
 class Browser
 {
-	vec4 base_color = vec4(0.2, 0.1, 0.7, 1.0);
-	vec4 brighter_color = vec4(0.25, 0.2, 0.8, 1.0);
-	vec4 brightest_color = vec4(0.3, 0.25, 1, 1.0);
-	string base_circle = "\\$31b" + Icons::Circle + "\\$fff ";
+	vec4 base_color = vec4(0.15, 0.1, 0.65, 1.0);
+	vec4 brighter_color = vec4(0.2, 0.2, 0.75, 1.0);
+	vec4 brightest_color = vec4(0.25, 0.25, 0.9, 1.0);
+	string base_circle = "\\$21a" + Icons::Circle + "\\$fff ";
 
 	CampaignType current_tab;
 	bool show_only_unbeaten_medals = false;
@@ -28,6 +28,10 @@ class Browser
 		@base_small_font = UI::LoadFont("DroidSans.ttf", 16, -1, -1 , true, true, true);
 
 		CampaignManager::Init();
+		for (uint i = 0; i < CampaignType::Count; i++)
+		{
+			CampaignManager::UpdateMedalsCounts(CampaignType(i));
+		}
 	}
 
 	void RenderMenu() 
@@ -58,6 +62,7 @@ class Browser
 		UI::PushStyleColor(UI::Col::Separator, base_color);
 		UI::PushStyleColor(UI::Col::SeparatorHovered, brighter_color);
 		UI::PushStyleColor(UI::Col::SeparatorActive, brightest_color);
+		UI::PushStyleColor(UI::Col::Button, base_color);
 		UI::PushStyleColor(UI::Col::ButtonHovered, brighter_color);
 		UI::PushStyleColor(UI::Col::ButtonActive, brightest_color);
 
@@ -81,7 +86,7 @@ class Browser
 		if (CampaignManager::chosen is null)
 		{
 			UI::End(); // "s314ke Medals"
-			UI::PopStyleColor(5); // Separator and Button
+			UI::PopStyleColor(6); // Separator and Button
 			return;
 		}
 
@@ -89,7 +94,7 @@ class Browser
 		{
 			UI::Text("Loading...");
 			UI::End(); // "s314ke Medals"
-			UI::PopStyleColor(5); // Separator and Button
+			UI::PopStyleColor(6); // Separator and Button
 			return;
 		}
 
@@ -101,7 +106,7 @@ class Browser
 
 		UI::EndChild(); // "RightContainer"
 		UI::End(); // "s314ke Medals"
-		UI::PopStyleColor(5); // Separator and Button
+		UI::PopStyleColor(6); // Separator and Button
 	}
 	
 	void DrawTitle()
@@ -135,15 +140,28 @@ class Browser
 	
 			if (current_tab != CampaignType::Other)
 			{
-				UI::SetCursorPos(UI::GetCursorPos() + vec2(50, 10));
+				string medal_counter_text = base_circle + " " + CampaignManager::medals_achieved[current_tab] + 
+											" / " + CampaignManager::medals_total[current_tab];
+				// center text
+				vec2 medal_counter_text_size = Draw::MeasureString(medal_counter_text);
+				vec2 medal_counter_additional_offset(-20, 40);
+				UI::SetCursorPos((container_size - medal_counter_text_size) * 0.5f + medal_counter_additional_offset);
 				UI::PushFont(base_normal_font);
-				CampaignManager::UpdateMedalsCounts(current_tab); 	// FIXME this solution is kinda retarded, I should find a better fix 
-																	//       for the concurrency problem of launching the update twice
-				UI::Text(base_circle + " " + CampaignManager::medals_achieved[current_tab] + " / " + CampaignManager::medals_total[current_tab]);
+				UI::Text(medal_counter_text);
+				UI::SameLine();
+				UI::PushFont(base_small_font);
+				if (UI::Button(Icons::Refresh)) {
+					CampaignManager::UpdateMedalsCounts(current_tab);
+				}
+				UI::PopFont(); // small
 				if (CampaignManager::medals_calculating[current_tab])
 				{
-					UI::SameLine();
-					UI::Text("Loading...");
+					string loading_text = "Loading...";
+					// center text
+					vec2 loading_text_size = Draw::MeasureString(loading_text);
+					vec2 loading_text_additional_offset(10, 70);
+					UI::SetCursorPos((container_size - loading_text_size) * 0.5f + loading_text_additional_offset);
+					UI::Text(loading_text);
 				}
 				UI::PopFont();
 			}
@@ -199,9 +217,6 @@ class Browser
 		{
 			if (UI::BeginTable("CampaignsTable", buttons_per_row))
 			{
-				UI::PushStyleColor(UI::Col::Button, base_color);
-				UI::PushStyleColor(UI::Col::ButtonHovered, brighter_color);
-				UI::PushStyleColor(UI::Col::ButtonActive, brightest_color);
 				UI::PushStyleVar(UI::StyleVar::FrameRounding, 10);
 
 				uint campaign_count = CampaignManager::GetCampaignsCount(campaign_type);
@@ -261,7 +276,6 @@ class Browser
 					}
 				}
 				UI::PopStyleVar();
-				UI::PopStyleColor(3);
 
 				UI::EndTable(); // "CampaignsTable"
 			}
@@ -278,10 +292,7 @@ class Browser
 		{
 			UI::TableSetupColumn("##name", UI::TableColumnFlags::WidthStretch);
 			UI::TableSetupColumn("##progress", UI::TableColumnFlags::WidthStretch);
-
-			UI::PushStyleColor(UI::Col::Button, base_color);
-			UI::PushStyleColor(UI::Col::ButtonHovered, brighter_color);
-			UI::PushStyleColor(UI::Col::ButtonActive, brightest_color);
+			
 			UI::PushFont(base_large_font);
 
 			UI::TableNextColumn();
@@ -304,13 +315,12 @@ class Browser
 			UI::SameLine();
 			UI::PushFont(base_small_font);
 			if (UI::Button(Icons::Refresh)) {
-				startnew(CoroutineFunc(CampaignManager::ReloadChosenCampaignMaps));
+				CampaignManager::ReloadChosenCampaignMaps();
 			}
 			UI::PopFont(); // small
 			UI::EndChild(); // "CampaignMedalCounter"
 
 			UI::PopFont(); // large
-			UI::PopStyleColor(3); // Button
 			UI::EndTable(); // "CampaignInfoTable"
 		}
 		UI::EndChild(); // "CampaignInfo"
@@ -343,14 +353,11 @@ class Browser
 			UI::TableSetupScrollFreeze(n_columns, 1);
 
 			UI::TableHeadersRow();
-			UI::PushStyleColor(UI::Col::Button, base_color);
-			UI::PushStyleColor(UI::Col::ButtonHovered, brighter_color);
-			UI::PushStyleColor(UI::Col::ButtonActive, brightest_color);
 
 			for (uint i = 0; i < CampaignManager::GetMapsCount(); i++)
 			{
 				Map map = CampaignManager::GetMap(i);
-				// skip if checkbox is ticked and medal is achieved or doesn't exist
+				// skip if checkbox is ticked AND (medal is achieved OR doesn't exist)
 				if (show_only_unbeaten_medals && (map.MedalAchieved() || !map.MedalExists()))
 					continue;
 
@@ -390,8 +397,6 @@ class Browser
 				UI::EndDisabled();
 				UI::PopID(); // "Play" + i
 			}
-			UI::PopStyleColor(3); // Button
-
 			UI::EndTable(); // "MapsTable"
 		}
 		UI::PopFont();
