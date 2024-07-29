@@ -38,7 +38,8 @@ namespace CampaignManager
     void ReloadChosenCampaignMaps()
     {
         chosen.maps_loaded = false;
-        Api::LoadMaps(chosen);
+        medals_counts_uptodate[chosen.type] = false;
+        UpdateMedalsCounts(chosen.type);
     }
 
     void UpdateMedalsCounts(const CampaignType&in campaign_type)
