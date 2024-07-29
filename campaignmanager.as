@@ -43,6 +43,9 @@ namespace CampaignManager
 
     void UpdateMedalsCounts(const CampaignType&in campaign_type)
     {
+        if (campaign_type == CampaignType::Other)
+            return;
+
         if (!medals_counts_uptodate[campaign_type] && !medals_calculating[campaign_type])
             startnew(CoroutineFuncUserdata(UpdateMedalsCountsCoroutine), UpdateMedalsCountsCoroutineData(campaign_type));
 
@@ -58,14 +61,6 @@ namespace CampaignManager
     {
         CampaignType campaign_type = cast<UpdateMedalsCountsCoroutineData>(_campaign_type).campaign_type;
         medals_calculating[campaign_type] = true;
-        
-        // TODO implement for 'other' too
-        if (campaign_type == CampaignType::Other)
-        {
-            medals_counts_uptodate[campaign_type] = true;
-            medals_calculating[campaign_type] = false;
-            return;
-        }
 
         // wait for the category of campaigns to load
         while (!campaigns_loaded[campaign_type])

@@ -133,19 +133,22 @@ class Browser
 			UI::Text(title_text);
 			UI::PopFont();
 	
-			UI::SetCursorPos(UI::GetCursorPos() + vec2(50, 10));
-			UI::PushFont(base_normal_font);
-			CampaignManager::UpdateMedalsCounts(current_tab); 	// FIXME this solution is kinda retarded, I should find a better fix 
-																//       for the concurrency problem of launching the update twice
-			UI::Text(base_circle + " " + CampaignManager::medals_achieved[current_tab] + " / " + CampaignManager::medals_total[current_tab]);
-			if (CampaignManager::medals_calculating[current_tab])
+			if (current_tab != CampaignType::Other)
 			{
-				UI::SameLine();
-				UI::Text("Loading...");
+				UI::SetCursorPos(UI::GetCursorPos() + vec2(50, 10));
+				UI::PushFont(base_normal_font);
+				CampaignManager::UpdateMedalsCounts(current_tab); 	// FIXME this solution is kinda retarded, I should find a better fix 
+																	//       for the concurrency problem of launching the update twice
+				UI::Text(base_circle + " " + CampaignManager::medals_achieved[current_tab] + " / " + CampaignManager::medals_total[current_tab]);
+				if (CampaignManager::medals_calculating[current_tab])
+				{
+					UI::SameLine();
+					UI::Text("Loading...");
+				}
+				UI::PopFont();
 			}
-			UI::PopFont();
+
 			UI::EndChild(); // "TitleTextWrapper"
-	
 			UI::EndTable(); // "TitleTable"
 		}
 		UI::SetWindowSize(vec2(UI::GetWindowContentRegionMax().x, 200));
