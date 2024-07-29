@@ -137,9 +137,7 @@ namespace Api
         load_maps_lock = true;
 
         string req_url = "https://live-services.trackmania.nadeo.live/api/token/map/get-multiple?mapUidList=";
-
         req_url += MyJson::GetMapUidsAsString(campaign);
-
         Net::HttpRequest@ req = NadeoServices::Get("NadeoLiveServices", req_url);
         AddUserAgent(req);
         req.Start();
@@ -150,7 +148,6 @@ namespace Api
         LoadMapsRecords(campaign);
         campaign.maps_loaded = true;
         load_maps_lock = false;
-        campaign.RecalculateMedalsCounts();
 
         MyJson::SaveMapsDataToJson(campaign);
     }
@@ -192,11 +189,11 @@ namespace Api
         
         MyJson::LoadMapRecords(data.campaign, req);
         
-        data.campaign.RecalculateMedalsCounts();
-        data.campaign.coroutines_running--;
+        data.campaign.coroutines_running--; // FIXME possible concurrency issues?
         // save records data when all coroutines finish
-        if (data.campaign.coroutines_running == 0)
+        if (!data.campaign.AreRecordsLoading())
         {
+            data.campaign.RecalculateMedalsCounts();
             MyJson::SaveMapsDataToJson(data.campaign);
         }
     }

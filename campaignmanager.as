@@ -6,9 +6,10 @@ namespace CampaignManager
 	Campaign@ chosen;
     array<bool> campaigns_loaded;
 
-    //uint medals_achieved = 0;
-    //uint medals_total = 0;
-    //bool medals_counts_uptodate = true;
+    array<uint> medals_achieved = {0,0,0};
+    array<uint> medals_total = {0,0,0};
+    array<bool> medals_counts_uptodate = {false, false, false};
+    array<bool> medals_calculating = {false, false, false};
 
     void Init()
     {
@@ -40,6 +41,57 @@ namespace CampaignManager
         Api::LoadMaps(chosen);
     }
 
+    void UpdateMedalsCounts(const CampaignType&in campaign_type)
+    {
+        if (!medals_counts_uptodate[campaign_type] && !medals_calculating[campaign_type])
+            startnew(CoroutineFuncUserdata(UpdateMedalsCountsCoroutine), UpdateMedalsCountsCoroutineData(campaign_type));
+
+    }
+
+    class UpdateMedalsCountsCoroutineData
+    {
+        CampaignType campaign_type;
+        UpdateMedalsCountsCoroutineData(const CampaignType&in campaign_type) {this.campaign_type = campaign_type;}
+    }
+
+    void UpdateMedalsCountsCoroutine(ref@ _campaign_type)
+    {
+        CampaignType campaign_type = cast<UpdateMedalsCountsCoroutineData>(_campaign_type).campaign_type;
+        medals_calculating[campaign_type] = true;
+        
+        // TODO implement for 'other' too
+        if (campaign_type == CampaignType::Other)
+        {
+            medals_counts_uptodate[campaign_type] = true;
+            medals_calculating[campaign_type] = false;
+            return;
+        }
+
+        // wait for the category of campaigns to load
+        while (!campaigns_loaded[campaign_type])
+            yield();
+
+        medals_achieved[campaign_type] = 0;
+        medals_total[campaign_type] = 0;
+        for (uint i = 0; i < campaigns_master_array[campaign_type].Length; i++)
+        {
+            Campaign@ campaign = campaigns_master_array[campaign_type][i];
+            // campaign loads the maps data from plugin storage in the constructor, so if it's not loaded then that data is not locally available
+            if (!campaign.maps_loaded)
+                Api::LoadMaps(campaign);
+
+            // wait for the map-record-fetching coroutines to all finish to prevent spamming the API too much
+            while (!campaign.maps_loaded || campaign.AreRecordsLoading())
+                yield();
+            campaign.RecalculateMedalsCounts();
+            medals_achieved[campaign_type] += campaign.medals_achieved;
+            medals_total[campaign_type] += campaign.medals_total;
+        }
+
+        medals_counts_uptodate[campaign_type] = true;
+        medals_calculating[campaign_type] = false;
+    }
+
     uint GetCampaignsCount(const CampaignType&in campaign_type)
     {
         return campaigns_master_array[campaign_type].Length;
@@ -64,42 +116,4 @@ namespace CampaignManager
     {
         return chosen.maps.Length;
     }
-
-    /*
-    uint GetAchievedMedalsCount()
-    {
-        if (medals_counts_uptodate)
-            return medals_achieved;
-        
-        medals_achieved = 0;
-        for (uint i = 0; i < nadeo.Length; i++)
-        {
-            medals_achieved += nadeo[i].medals_achieved;
-        }
-        for (uint i = 0; i < totd.Length; i++)
-        {
-            medals_achieved += totd[i].medals_achieved;
-        }
-        medals_counts_uptodate = true;
-        return medals_achieved;
-    }
-
-    uint GetTotalMedalsCount()
-    {
-        if (medals_counts_uptodate)
-            return medals_total;
-        
-        medals_total = 0;
-        for (uint i = 0; i < nadeo.Length; i++)
-        {
-            medals_total += nadeo[i].medals_total;
-        }
-        for (uint i = 0; i < totd.Length; i++)
-        {
-            medals_total += totd[i].medals_total;
-        }
-        medals_counts_uptodate = true;
-        return medals_total;
-    }
-    */
 }

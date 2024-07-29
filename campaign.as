@@ -15,7 +15,7 @@ class Campaign
     string short_name;
 
     array<Map> maps;
-    bool maps_loaded;
+    bool maps_loaded = false;
     dictionary mapid_to_maps_array_index;
 
     uint coroutines_running = 0;
@@ -30,10 +30,14 @@ class Campaign
         this.type = type;
         this.json_index = json_index;
         this.short_name = (type != CampaignType::Other) ? CreateShortName() : short_name;
-        maps_loaded = false;
 
         MyJson::LoadMapsDataFromJson(@this);
         RecalculateMedalsCounts();
+    }
+
+    bool AreRecordsLoading()
+    {
+        return coroutines_running > 0;
     }
 
     private string CreateShortName()
@@ -55,20 +59,19 @@ class Campaign
 
     void RecalculateMedalsCounts()
     {
-        uint counter = 0;
+        uint counter_achieved = 0;
+        uint counter_total = 0;
         for (uint i = 0; i < maps.Length; i++)
         {
             if (maps[i].MedalAchieved())
-                counter++;
-        }
-        medals_achieved = counter;
-
-        counter = 0;
-        for (uint i = 0; i < maps.Length; i++)
-        {
+                counter_achieved++;
+            
             if (maps[i].MedalExists())
-                counter++;
+                counter_total++;
         }
-        medals_total = counter;
+        medals_achieved = counter_achieved;
+        medals_total = counter_total;
+
+        CampaignManager::medals_counts_uptodate[type] = false;
     }
 }

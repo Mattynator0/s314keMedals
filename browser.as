@@ -8,6 +8,7 @@ class Browser
 	vec4 brightest_color = vec4(0.3, 0.25, 1, 1.0);
 	string base_circle = "\\$31b" + Icons::Circle + "\\$fff ";
 
+	CampaignType current_tab;
 	bool show_only_unbeaten_medals = false;
 
 	uint window_w = 900;
@@ -132,9 +133,17 @@ class Browser
 			UI::Text(title_text);
 			UI::PopFont();
 	
-			//UI::PushFont(base_normal_font);
-			//UI::Text(base_circle + " " + CampaignManager::GetAchievedMedalsCount() + " / " + CampaignManager::GetTotalMedalsCount());
-			//UI::PopFont();
+			UI::SetCursorPos(UI::GetCursorPos() + vec2(50, 10));
+			UI::PushFont(base_normal_font);
+			CampaignManager::UpdateMedalsCounts(current_tab); 	// FIXME this solution is kinda retarded, I should find a better fix 
+																//       for the concurrency problem of launching the update twice
+			UI::Text(base_circle + " " + CampaignManager::medals_achieved[current_tab] + " / " + CampaignManager::medals_total[current_tab]);
+			if (CampaignManager::medals_calculating[current_tab])
+			{
+				UI::SameLine();
+				UI::Text("Loading...");
+			}
+			UI::PopFont();
 			UI::EndChild(); // "TitleTextWrapper"
 	
 			UI::EndTable(); // "TitleTable"
@@ -153,20 +162,20 @@ class Browser
 
 		if (UI::BeginTabItem("Campaigns"))
 		{
+			current_tab = CampaignType::Nadeo;
 			DrawCampaignSelectionMenuTab(CampaignType::Nadeo);
-			
 			UI::EndTabItem(); // "Campaigns"
 		}
 		if (UI::BeginTabItem("Track of the Day"))
 		{
+			current_tab = CampaignType::Totd;
 			DrawCampaignSelectionMenuTab(CampaignType::Totd);
-
 			UI::EndTabItem(); // "Track of the Day"
 		}
 		if (UI::BeginTabItem("Other"))
 		{
+			current_tab = CampaignType::Other;
 			DrawCampaignSelectionMenuTab(CampaignType::Other);
-
 			UI::EndTabItem(); // "Other"
 		}
 
