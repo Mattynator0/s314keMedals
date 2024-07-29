@@ -24,7 +24,7 @@ namespace CampaignManager
 
     void ChooseCampaign(const CampaignType&in campaign_type, uint index)
     {
-        @chosen = campaigns_master_array[campaign_type][index];
+        @chosen = GetCampaign(campaign_type, index);
 
         if (!chosen.maps_loaded)
             startnew(CoroutineFunc(LoadChosenCampaignMaps));
@@ -101,6 +101,11 @@ namespace CampaignManager
     uint GetCampaignsCount(const CampaignType&in campaign_type)
     {
         return campaigns_master_array[campaign_type].Length;
+    }
+
+    Campaign@ GetCampaign(const CampaignType&in campaign_type, uint index)
+    {
+        return campaigns_master_array[campaign_type][index];
     }
 
     string GetChosenCampaignName()
