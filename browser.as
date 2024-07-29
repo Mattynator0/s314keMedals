@@ -314,7 +314,7 @@ class Browser
 			UI::Text(medalcounter_text);
 			UI::SameLine();
 			UI::PushFont(base_small_font);
-			if (UI::Button(Icons::Refresh)) {
+			if (!CampaignManager::AreRecordsLoading() && UI::Button(Icons::Refresh)) {
 				CampaignManager::ReloadChosenCampaignMaps();
 			}
 			UI::PopFont(); // small

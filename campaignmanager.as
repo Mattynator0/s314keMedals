@@ -37,18 +37,24 @@ namespace CampaignManager
 
     void ReloadChosenCampaignMaps()
     {
-        chosen.maps_loaded = false;
-        medals_counts_uptodate[chosen.type] = false;
+        if (!medals_calculating[chosen.type]) // prevent setting the flag back to false after the maps already got loaded by a different coroutine
+        {
+            chosen.maps_loaded = false;
+            medals_counts_uptodate[chosen.type] = false;
+        }
         UpdateMedalsCounts(chosen.type);
     }
 
     void ReloadAllCampaignMaps(const CampaignType&in campaign_type)
     {
-        for (uint i = 0; i < campaigns_master_array[campaign_type].Length; i++)
+        if (!medals_calculating[campaign_type]) // prevent setting the flag back to false after the maps already got loaded by a different coroutine
         {
-            campaigns_master_array[campaign_type][i].maps_loaded = false;
+            for (uint i = 0; i < campaigns_master_array[campaign_type].Length; i++)
+            {
+                campaigns_master_array[campaign_type][i].maps_loaded = false;
+            }
+            medals_counts_uptodate[campaign_type] = false;
         }
-        medals_counts_uptodate[campaign_type] = false;
         UpdateMedalsCounts(campaign_type);
     }
 
@@ -59,7 +65,6 @@ namespace CampaignManager
 
         if (!medals_counts_uptodate[campaign_type] && !medals_calculating[campaign_type])
             startnew(CoroutineFuncUserdata(UpdateMedalsCountsCoroutine), UpdateMedalsCountsCoroutineData(campaign_type));
-
     }
 
     class UpdateMedalsCountsCoroutineData
@@ -121,5 +126,10 @@ namespace CampaignManager
     uint GetMapsCount()
     {
         return chosen.maps.Length;
+    }
+
+    bool AreRecordsLoading()
+    {
+        return chosen.AreRecordsLoading();
     }
 }
