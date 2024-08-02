@@ -3,7 +3,7 @@ class Map
     string uid;
     string id;
     string name;
-    uint s314ke_medal_time = 0;
+    uint s314ke_medal_time = uint(-1) - 2;
     uint pb_time = uint(-1) - 1;
     string download_url;
     Campaign@ campaign;
@@ -15,7 +15,7 @@ class Map
 
     bool MedalExists()
     {
-        return s314ke_medal_time > 0;
+        return s314ke_medal_time != uint(-1) - 2;
     }
 
     bool PbExists()
