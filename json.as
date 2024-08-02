@@ -69,6 +69,8 @@ namespace MyJson
             map.download_url = loaded_json[i]["downloadUrl"];
             @map.campaign = campaign;
             campaign.maps.InsertLast(map);
+
+            map_uid_to_handle.Set(map.uid, @map);
         }
         campaign.maps_loaded = true;
     }
@@ -186,10 +188,11 @@ namespace MyJson
             campaign.mapid_to_maps_array_index.Set(map.id, i);
             map.download_url = maps_info["mapList"][i]["downloadUrl"];
             @map.campaign = campaign;
+            if (maps_info["mapList"][i]["author"] == Api::s314ke_id)
+                map.s314ke_medal_time = maps_info["mapList"][i]["authorTime"];
+            campaign.maps.InsertLast(map);
 
             map_uid_to_handle.Set(map.uid, @map);
-
-            campaign.maps.InsertLast(map);
         }
     }
 
@@ -205,10 +208,11 @@ namespace MyJson
         {
             uint j;
             campaign.mapid_to_maps_array_index.Get(map_times[i]["mapId"], j);
-            if (map_times[i]["accountId"] == Api::s314ke_id)
-                campaign.maps[j].s314ke_medal_time = map_times[i]["recordScore"]["time"];
+            Map@ map = campaign.maps[j];
+            if (map_times[i]["accountId"] == Api::s314ke_id && map.s314ke_medal_time > map_times[i]["recordScore"]["time"])
+                map.s314ke_medal_time = map_times[i]["recordScore"]["time"];
             if (map_times[i]["accountId"] == Api::GetWSID())
-                campaign.maps[j].pb_time = map_times[i]["recordScore"]["time"];
+                map.pb_time = map_times[i]["recordScore"]["time"];
         }
     }
 }

@@ -73,5 +73,6 @@ class Campaign
         medals_total = counter_total;
 
         CampaignManager::medals_counts_uptodate[type] = false;
+        CampaignManager::UpdateMedalsCounts(type);
     }
 }

@@ -49,6 +49,7 @@ namespace Api
         string req_url = GetRecordsReqUrlBase() + last_map.id;
 
         LoadMapsRecordsCoroutineData map_data(req_url, last_map.campaign);
+        last_map.campaign.coroutines_running++;
         startnew(LoadMapsRecordsCoroutine, map_data);
     }
 
@@ -189,7 +190,7 @@ namespace Api
         
         MyJson::LoadMapRecords(data.campaign, req);
         
-        data.campaign.coroutines_running--; // FIXME possible concurrency issues?
+        data.campaign.coroutines_running--;
         // save records data when all coroutines finish
         if (!data.campaign.AreRecordsLoading())
         {
