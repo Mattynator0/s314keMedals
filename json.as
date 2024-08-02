@@ -209,7 +209,7 @@ namespace MyJson
             uint j;
             campaign.mapid_to_maps_array_index.Get(map_times[i]["mapId"], j);
             Map@ map = campaign.maps[j];
-            if (map_times[i]["accountId"] == Api::s314ke_id && map.s314ke_medal_time > map_times[i]["recordScore"]["time"])
+            if (map_times[i]["accountId"] == Api::s314ke_id && map.s314ke_medal_time > uint(map_times[i]["recordScore"]["time"]))
                 map.s314ke_medal_time = map_times[i]["recordScore"]["time"];
             if (map_times[i]["accountId"] == Api::GetWSID())
                 map.pb_time = map_times[i]["recordScore"]["time"];
