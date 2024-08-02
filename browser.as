@@ -130,40 +130,25 @@ class Browser
 			UI::TableNextColumn();
 			UI::BeginChild("TitleTextWrapper");
 			UI::PushFont(base_large_font);
-			string title_text = base_circle + " s314ke Medals";
-			// center text
-			vec2 container_size = UI::GetContentRegionAvail();
-			vec2 title_text_size = Draw::MeasureString(title_text);
-			UI::SetCursorPos((container_size - title_text_size) * 0.5f);
-			UI::Text(title_text);
+			CenterText(base_circle + " s314ke Medals", vec2(0, -20));
 			UI::PopFont();
 	
 			if (current_tab != CampaignType::Other)
 			{
 				string medal_counter_text = base_circle + " " + CampaignManager::medals_achieved[current_tab] + 
 											" / " + CampaignManager::medals_total[current_tab];
-				// center text
-				vec2 medal_counter_text_size = Draw::MeasureString(medal_counter_text);
-				vec2 medal_counter_additional_offset(-20, 40);
-				UI::SetCursorPos((container_size - medal_counter_text_size) * 0.5f + medal_counter_additional_offset);
 				UI::PushFont(base_normal_font);
-				UI::Text(medal_counter_text);
+				CenterText(medal_counter_text, vec2(-20, 70));
 				UI::SameLine();
 				UI::PushFont(base_small_font);
 				if (UI::Button(Icons::Refresh)) {
 					CampaignManager::ReloadAllCampaignMaps(current_tab);
 				}
 				UI::PopFont(); // small
-				if (CampaignManager::medals_calculating[current_tab])
-				{
-					string loading_text = "Loading...";
-					// center text
-					vec2 loading_text_size = Draw::MeasureString(loading_text);
-					vec2 loading_text_additional_offset(10, 70);
-					UI::SetCursorPos((container_size - loading_text_size) * 0.5f + loading_text_additional_offset);
-					UI::Text(loading_text);
+				if (CampaignManager::medals_calculating[current_tab]) {
+					CenterText("Loading...", vec2(0, 125));
 				}
-				UI::PopFont();
+				UI::PopFont(); // normal
 			}
 
 			UI::EndChild(); // "TitleTextWrapper"
@@ -257,7 +242,7 @@ class Browser
 						float additional_offset = 1.0; // for some reason the text is slightly off center without this
 						UI::SetCursorPos(UI::GetCursorPos() + vec2(b + move_short_name_x + additional_offset, -60)); // center text
 						UI::Text(campaign.short_name);
-						UI::PopFont();
+						UI::PopFont(); // large
 					}
 					else
 					{
@@ -402,5 +387,13 @@ class Browser
 		UI::PopFont();
 		UI::PopStyleColor(5); // TableRowBg, Frame, Checkmark
 		UI::EndChild(); // "Maps"
+	}
+
+	void CenterText(const string&in text, const vec2 additional_offset = vec2(0,0))
+	{
+		vec2 container_size = UI::GetContentRegionAvail();
+		vec2 text_size = Draw::MeasureString(text);
+		UI::SetCursorPos((container_size - text_size) * 0.5f + additional_offset);
+		UI::Text(text);
 	}
 }
