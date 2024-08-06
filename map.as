@@ -10,12 +10,14 @@ class Map
 
     bool MedalAchieved()
     {
-        return pb_time <= s314ke_medal_time;
+        return MedalExists() && (pb_time <= s314ke_medal_time);
     }
 
     bool MedalExists()
     {
-        return s314ke_medal_time != uint(-1) - 2;
+        // '!= 0' for backwards compatibility with old cache files
+        return (s314ke_medal_time != uint(-1) - 2) &&
+               (s314ke_medal_time != 0); 
     }
 
     bool PbExists()
