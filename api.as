@@ -59,6 +59,7 @@ namespace Api
 
     void LoadListOfCampaigns(array<Campaign@>@ campaigns, const CampaignType&in campaign_type)
     {
+        campaigns.Resize(0);
         string req_url;
         if (campaign_type == CampaignType::Nadeo)
             req_url = "https://live-services.trackmania.nadeo.live/api/token/campaign/official?offset=0&length=1000"; // 1000 to get all of them

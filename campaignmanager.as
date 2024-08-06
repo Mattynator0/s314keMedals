@@ -22,6 +22,11 @@ namespace CampaignManager
         initialized = true;
     }
 
+    void ReloadOtherCampaignsList()
+    {
+        Api::LoadListOfCampaigns(campaigns_master_array[CampaignType::Other], CampaignType::Other);
+    }
+
     void ChooseCampaign(const CampaignType&in campaign_type, uint index)
     {
         @chosen = GetCampaign(campaign_type, index);

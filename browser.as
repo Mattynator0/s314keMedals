@@ -133,7 +133,19 @@ class Browser
 			CenterText(base_circle + " s314ke Medals", vec2(0, -20));
 			UI::PopFont();
 	
-			if (current_tab != CampaignType::Other)
+			if (current_tab == CampaignType::Other)
+			{
+				UI::PushFont(base_normal_font);
+				CenterText("Refresh list", vec2(-10, 70));
+				UI::PopFont(); // normal
+				UI::SameLine();
+				UI::PushFont(base_small_font);
+				if (UI::Button(Icons::Refresh)) {
+                	CampaignManager::ReloadOtherCampaignsList();
+				}
+				UI::PopFont(); // small
+			}
+			else
 			{
 				string medal_counter_text = base_circle + " " + CampaignManager::medals_achieved[current_tab] + 
 											" / " + CampaignManager::medals_total[current_tab];
@@ -184,7 +196,6 @@ class Browser
 			DrawCampaignSelectionMenuTab(CampaignType::Other);
 			UI::EndTabItem(); // "Other"
 		}
-
 		UI::EndTabBar(); // "CampaignsBar"
 		UI::PopStyleColor(3);
 	}
