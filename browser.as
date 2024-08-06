@@ -10,6 +10,7 @@ class Browser
 
 	CampaignType current_tab;
 	bool show_only_unbeaten_medals = false;
+	bool tiles_display = true;
 
 	uint window_w = 900;
 	uint window_h = 600;
@@ -176,114 +177,183 @@ class Browser
 		UI::PushStyleColor(UI::Col::TabHovered, brightest_color);
 		UI::PushStyleColor(UI::Col::TabActive, brighter_color);
 
+		string checkbox_label;
+		if (tiles_display) 
+			checkbox_label = " Tiles";
+		else checkbox_label = " List";
+
+		UI::PushStyleColor(UI::Col::CheckMark, brightest_color);
+		UI::PushStyleColor(UI::Col::FrameBg, vec4(.35, .35, .35, .3));
+		UI::PushStyleColor(UI::Col::FrameBgHovered, base_color);
+		UI::PushStyleColor(UI::Col::FrameBgActive, brighter_color);
+		tiles_display = UI::Checkbox(checkbox_label, tiles_display);
+		UI::PopStyleColor(4); // checkmark and frame
+
 		UI::BeginTabBar("CampaignsBar");
 
 		if (UI::BeginTabItem("Campaigns"))
 		{
 			current_tab = CampaignType::Nadeo;
-			DrawCampaignSelectionMenuTab(CampaignType::Nadeo);
+			if (tiles_display)
+				DrawCampaignSelectionMenuTabTiles();
+			else DrawCampaignSelectionMenuTabTable();
 			UI::EndTabItem(); // "Campaigns"
 		}
 		if (UI::BeginTabItem("Track of the Day"))
 		{
 			current_tab = CampaignType::Totd;
-			DrawCampaignSelectionMenuTab(CampaignType::Totd);
+			if (tiles_display)
+				DrawCampaignSelectionMenuTabTiles();
+			else DrawCampaignSelectionMenuTabTable();
 			UI::EndTabItem(); // "Track of the Day"
 		}
 		if (UI::BeginTabItem("Other"))
 		{
 			current_tab = CampaignType::Other;
-			DrawCampaignSelectionMenuTab(CampaignType::Other);
+			if (tiles_display)
+				DrawCampaignSelectionMenuTabTiles();
+			else DrawCampaignSelectionMenuTabTable();
 			UI::EndTabItem(); // "Other"
 		}
 		UI::EndTabBar(); // "CampaignsBar"
 		UI::PopStyleColor(3);
 	}
 
-	void DrawCampaignSelectionMenuTab(const CampaignType&in campaign_type)
+	void DrawCampaignSelectionMenuTabTable()
+	{
+		if (!CampaignManager::campaigns_loaded[current_tab])
+		{
+			UI::Text("Loading...");
+			return;
+		}
+		
+		UI::PushStyleColor(UI::Col::TableRowBg, vec4(.25, .25, .25, .2));
+		UI::PushFont(base_normal_font);
+		if (UI::BeginTable("CampaignsTableList", 4, UI::TableFlags::RowBg | UI::TableFlags::ScrollY | UI::TableFlags::PadOuterX))
+		{
+			UI::TableSetupColumn("Name", UI::TableColumnFlags::WidthStretch);
+			UI::TableSetupColumn("##achieved", UI::TableColumnFlags::WidthFixed);
+			UI::TableSetupColumn("Progress   ", UI::TableColumnFlags::WidthFixed);
+			UI::TableSetupColumn("##button", UI::TableColumnFlags::WidthFixed);
+			UI::TableSetupScrollFreeze(4, 1);
+
+			UI::TableHeadersRow();
+
+			for (uint i = 0; i < CampaignManager::GetCampaignsCount(current_tab); i++)
+			{
+				UI::TableNextRow(UI::TableRowFlags::None, 30);
+				Campaign@ campaign = CampaignManager::GetCampaign(current_tab, i);
+
+				UI::TableNextColumn(); // "Name"
+				UI::AlignTextToFramePadding();
+				UI::Text(campaign.name);
+
+				UI::TableNextColumn(); // "##achieved"
+				if (campaign.medals_achieved == campaign.medals_total)
+					UI::Text(base_circle);
+
+				UI::TableNextColumn(); // "Progress"
+				UI::Text(tostring(campaign.medals_achieved) + " / " + campaign.medals_total);
+
+				UI::TableNextColumn(); // "##button"
+				UI::PushFont(base_small_font);
+				UI::PushID("CampaignButton" + tostring(i));
+				if (UI::Button(Icons::Play))
+					CampaignManager::ChooseCampaign(current_tab, i);
+				UI::PopID();
+				UI::PopFont(); // small
+			}
+
+			UI::EndTable(); // "CampaignsTableList"
+		}
+		UI::PopFont(); // normal
+		UI::PopStyleColor(); // TableRowBg
+	}
+	void DrawCampaignSelectionMenuTabTiles()
 	{
 		const vec2 button_size = vec2(80, 80);
 		const float button_padding = 5; // also minimum value of 'b'
 		const uint buttons_per_row = Math::Max(1, uint(UI::GetWindowSize().x / (button_size.x + 2 * button_padding)));
 
 		UI::BeginChild("TableWrapper", vec2(), false, UI::WindowFlags::NoScrollbar);
-		if (!CampaignManager::campaigns_loaded[campaign_type])
-			UI::Text("Loading...");
-		else
+		if (!CampaignManager::campaigns_loaded[current_tab])
 		{
-			if (UI::BeginTable("CampaignsTable", buttons_per_row))
+			UI::Text("Loading...");
+			UI::EndChild(); // "TableWrapper"
+			return;
+		}
+		if (UI::BeginTable("CampaignsTableTiles", buttons_per_row))
+		{
+			UI::PushStyleVar(UI::StyleVar::FrameRounding, 10);
+
+			uint campaign_count = CampaignManager::GetCampaignsCount(current_tab);
+
+			// button spacing (value of 'a' is fixed)
+			//  
+			// |    __      __      __    |
+			// |   |__|    |__|    |__|   |
+			// |                          |
+			//      a       a       a
+			//  <-><--><--><--><--><--><->
+			//   b      2b      2b      b
+			// 
+			for (uint i = 0; i < campaign_count; i++)
 			{
-				UI::PushStyleVar(UI::StyleVar::FrameRounding, 10);
-
-				uint campaign_count = CampaignManager::GetCampaignsCount(campaign_type);
-
-				// button spacing (value of 'a' is fixed)
-				//  
-				// |    __      __      __    |
-				// |   |__|    |__|    |__|   |
-				// |                          |
-				//      a       a       a
-				//  <-><--><--><--><--><--><->
-				//   b      2b      2b      b
-				// 
-				for (uint i = 0; i < campaign_count; i++)
-				{
-					Campaign@ campaign = CampaignManager::GetCampaign(campaign_type, i);
-					UI::TableNextColumn();
-					UI::Dummy(vec2(0, 2 * button_padding));
-						
-					float whole_width = UI::GetWindowSize().x;
-
-					// look at the figure above to understand what 'a' and 'b' are
-					float a = button_size.x;
-					float b = (whole_width - a * buttons_per_row) / (buttons_per_row * 2);
-					UI::SetCursorPos(UI::GetCursorPos() + vec2(b, 0)); // center button
-
-					UI::PushID("CampaignButton" + tostring(i));
-					if (UI::Button("", button_size))
-					{
-						CampaignManager::ChooseCampaign(campaign_type, i);
-					}
-					UI::PopID();
+				Campaign@ campaign = CampaignManager::GetCampaign(current_tab, i);
+				UI::TableNextColumn();
+				UI::Dummy(vec2(0, 2 * button_padding));
 					
-					if (campaign_type == CampaignType::Other)
-					{
-						UI::PushFont(base_large_font);
-						if (Draw::MeasureString(campaign.short_name).x > button_size.x - 14) {
-							UI::PopFont();
-							UI::PushFont(base_normal_font);
-						}
-						if (Draw::MeasureString(campaign.short_name).x > button_size.x - 14) {
-							UI::PopFont();
-							UI::PushFont(base_small_font);
-						}
-						vec2 text_size = Draw::MeasureString(campaign.short_name);
-						float move_short_name_x = (button_size.x - text_size.x) * 0.5f;
-						float additional_offset = 1.0; // for some reason the text is slightly off center without this
-						UI::SetCursorPos(UI::GetCursorPos() + vec2(b + move_short_name_x + additional_offset, -35 - (text_size.y))); // center text
-						UI::Text(campaign.short_name);
-						UI::PopFont();
-					}
-					else
-					{
-						UI::PushFont(base_large_font);
-						float move_twodigits_x = (button_size.x - Draw::MeasureString(campaign.GetTwoLastDigitsOfYear()).x) * 0.5f;
-						float additional_offset = 1.0; // for some reason the text is slightly off center without this
-						UI::SetCursorPos(UI::GetCursorPos() + vec2(b + move_twodigits_x + additional_offset, -70)); // center text
-						UI::Text(campaign.GetTwoLastDigitsOfYear()); // year
-						UI::PopFont();
+				float whole_width = UI::GetWindowSize().x;
 
-						UI::PushFont(base_normal_font); 
-						float move_month_x = (button_size.x - Draw::MeasureString(campaign.short_name).x) * 0.5f;
-						UI::SetCursorPos(UI::GetCursorPos() + vec2(b + move_month_x + additional_offset, 0)); // center text
-						UI::Text(campaign.short_name);
-						UI::PopFont();
-					}
+				// look at the figure above to understand what 'a' and 'b' are
+				float a = button_size.x;
+				float b = (whole_width - a * buttons_per_row) / (buttons_per_row * 2);
+				UI::SetCursorPos(UI::GetCursorPos() + vec2(b, 0)); // center button
+
+				UI::PushID("CampaignButton" + tostring(i));
+				if (UI::Button("", button_size))
+				{
+					CampaignManager::ChooseCampaign(current_tab, i);
 				}
-				UI::PopStyleVar();
+				UI::PopID();
+				
+				if (current_tab == CampaignType::Other)
+				{
+					UI::PushFont(base_large_font);
+					if (Draw::MeasureString(campaign.short_name).x > button_size.x - 14) {
+						UI::PopFont();
+						UI::PushFont(base_normal_font);
+					}
+					if (Draw::MeasureString(campaign.short_name).x > button_size.x - 14) {
+						UI::PopFont();
+						UI::PushFont(base_small_font);
+					}
+					vec2 text_size = Draw::MeasureString(campaign.short_name);
+					float move_short_name_x = (button_size.x - text_size.x) * 0.5f;
+					float additional_offset = 1.0; // for some reason the text is slightly off center without this
+					UI::SetCursorPos(UI::GetCursorPos() + vec2(b + move_short_name_x + additional_offset, -35 - (text_size.y))); // center text
+					UI::Text(campaign.short_name);
+					UI::PopFont();
+				}
+				else
+				{
+					UI::PushFont(base_large_font);
+					float move_twodigits_x = (button_size.x - Draw::MeasureString(campaign.GetTwoLastDigitsOfYear()).x) * 0.5f;
+					float additional_offset = 1.0; // for some reason the text is slightly off center without this
+					UI::SetCursorPos(UI::GetCursorPos() + vec2(b + move_twodigits_x + additional_offset, -70)); // center text
+					UI::Text(campaign.GetTwoLastDigitsOfYear()); // year
+					UI::PopFont();
 
-				UI::EndTable(); // "CampaignsTable"
+					UI::PushFont(base_normal_font); 
+					float move_month_x = (button_size.x - Draw::MeasureString(campaign.short_name).x) * 0.5f;
+					UI::SetCursorPos(UI::GetCursorPos() + vec2(b + move_month_x + additional_offset, 0)); // center text
+					UI::Text(campaign.short_name);
+					UI::PopFont();
+				}
 			}
+			UI::PopStyleVar();
+
+			UI::EndTable(); // "CampaignsTable"
 		}
 		UI::EndChild(); // "TableWrapper"
 	}
@@ -343,8 +413,7 @@ class Browser
 		UI::PushStyleColor(UI::Col::TableRowBg, vec4(.25, .25, .25, .2));
 		UI::PushFont(base_small_font);
 
-		uint n_columns = CampaignManager::chosen.type == CampaignType::Totd ? 7 
-																			: 6;
+		uint n_columns = CampaignManager::chosen.type == CampaignType::Totd ? 7 : 6;
 		if (UI::BeginTable("MapsTable", n_columns, UI::TableFlags::RowBg | UI::TableFlags::ScrollY | UI::TableFlags::PadOuterX))
 		{
 			if (CampaignManager::chosen.type == CampaignType::Totd)
@@ -370,29 +439,29 @@ class Browser
 
 				if (CampaignManager::chosen.type == CampaignType::Totd) 
 				{
-					UI::TableNextColumn(); // day
+					UI::TableNextColumn(); // "##day"
 					UI::AlignTextToFramePadding();
 					UI::Text(" " + tostring(i + 1) + " ");
 				}
 
-				UI::TableNextColumn(); // map name
+				UI::TableNextColumn(); // "Name"
 				UI::AlignTextToFramePadding();
 				UI::Text(Text::OpenplanetFormatCodes(map.name));
 
-				UI::TableNextColumn(); // padding
-				UI::TableNextColumn(); // s314ke medal time
+				UI::TableNextColumn(); // "##padding"
+				UI::TableNextColumn(); // "Medal"
 				if (map.MedalExists())
 					UI::Text(Time::Format(map.s314ke_medal_time));
 
-				UI::TableNextColumn(); // circle
+				UI::TableNextColumn(); // "##achieved"
 				if (map.MedalAchieved())
 					UI::Text(base_circle);
 
-				UI::TableNextColumn(); // PB
+				UI::TableNextColumn(); // "PB"
 				if (map.PbExists())
 					UI::Text(Time::Format(map.pb_time));
 
-				UI::TableNextColumn(); // button
+				UI::TableNextColumn(); // "##button"
 				UI::PushID("Play" + i);
 				UI::BeginDisabled(!user_has_permissions);
 				if (UI::Button("Play"))
