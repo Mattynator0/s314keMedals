@@ -202,7 +202,7 @@ class Browser
 
 	void DrawCampaignSelectionMenuTab(const CampaignType&in campaign_type)
 	{
-		vec2 button_size = vec2(80, 80);
+		const vec2 button_size = vec2(80, 80);
 		const float button_padding = 5; // also minimum value of 'b'
 		const uint buttons_per_row = Math::Max(1, uint(UI::GetWindowSize().x / (button_size.x + 2 * button_padding)));
 
@@ -249,11 +249,20 @@ class Browser
 					if (campaign_type == CampaignType::Other)
 					{
 						UI::PushFont(base_large_font);
-						float move_short_name_x = (button_size.x - Draw::MeasureString(campaign.short_name).x) * 0.5f;
+						if (Draw::MeasureString(campaign.short_name).x > button_size.x - 14) {
+							UI::PopFont();
+							UI::PushFont(base_normal_font);
+						}
+						if (Draw::MeasureString(campaign.short_name).x > button_size.x - 14) {
+							UI::PopFont();
+							UI::PushFont(base_small_font);
+						}
+						vec2 text_size = Draw::MeasureString(campaign.short_name);
+						float move_short_name_x = (button_size.x - text_size.x) * 0.5f;
 						float additional_offset = 1.0; // for some reason the text is slightly off center without this
-						UI::SetCursorPos(UI::GetCursorPos() + vec2(b + move_short_name_x + additional_offset, -60)); // center text
+						UI::SetCursorPos(UI::GetCursorPos() + vec2(b + move_short_name_x + additional_offset, -35 - (text_size.y))); // center text
 						UI::Text(campaign.short_name);
-						UI::PopFont(); // large
+						UI::PopFont();
 					}
 					else
 					{
