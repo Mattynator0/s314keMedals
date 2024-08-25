@@ -4,18 +4,22 @@ namespace CampaignManager
 
     array<array<Campaign@>> campaigns_master_array;
 	Campaign@ chosen;
-    array<bool> campaigns_loaded;
 
-    array<uint> medals_achieved = {0,0,0};
-    array<uint> medals_total = {0,0,0};
-    array<bool> medals_counts_uptodate = {false, false, false};
-    array<bool> medals_calculating = {false, false, false};
+    array<bool> campaigns_loaded;
+    array<uint> medals_achieved;
+    array<uint> medals_total;
+    array<bool> medals_counts_uptodate;
+    array<bool> medals_calculating;
 
     void Init()
     {
         for (uint i = 0; i < CampaignType::Count; i++) 
         {
             campaigns_loaded.InsertLast(false);
+            medals_achieved.InsertLast(0);
+            medals_total.InsertLast(0);
+            medals_counts_uptodate.InsertLast(false);
+            medals_calculating.InsertLast(false);
         }
 
         MyJson::InitCampaigns();
