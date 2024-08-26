@@ -98,7 +98,7 @@ namespace MyJson
         }
     }
 
-    void LoadListOfCampaignsFromJson(Json::Value@ json, array<Campaign@>@ campaigns, const CampaignType&in campaign_type)
+    void LoadListOfCampaignsFromJson(Json::Value@ json, array<Campaign@>@ campaigns_list, const CampaignType&in campaign_type)
     {
         uint other_index;
         if (campaign_type == CampaignType::Other)
@@ -119,7 +119,7 @@ namespace MyJson
             {
                 string name = campaign_json["campaignList"][i]["name"];
                 Campaign campaign(name, name, campaign_type, i);
-                campaigns.InsertLast(campaign);
+                campaigns_list.InsertLast(campaign);
             }
         }
         else if (campaign_type == CampaignType::Totd)
@@ -132,14 +132,14 @@ namespace MyJson
                 string name = month_names[uint(campaign_json["monthList"][i]["month"]) - 1] // -1 because in the json, January is 1
                                     + " " + Json::Write(campaign_json["monthList"][i]["year"]);
                 Campaign campaign(name, name, campaign_type, i);
-                campaigns.InsertLast(campaign);
+                campaigns_list.InsertLast(campaign);
             }
         }
         else if (campaign_type == CampaignType::Other)
         {
             string file_name = string(json["name"]) + " " + Json::Write(json["campaignId"]);
             Campaign campaign(json["name"], file_name, campaign_type, other_index, json["shortName"]);
-            campaigns.InsertLast(campaign);
+            campaigns_list.InsertLast(campaign);
         }
         
         CampaignManager::campaigns_loaded[campaign_type] = true;
@@ -195,10 +195,9 @@ namespace MyJson
             map_uid_to_handle.Set(map.uid, @map);
         }
     }
-
-    void LoadMapRecords(Campaign@ campaign, Net::HttpRequest@ req)
+    
+    void LoadRecordsForSingleMap(Map@ map, Json::Value@ map_times)
     {
-        Json::Value map_times = req.Json();
         if (map_times.GetType() == Json::Type::Object && map_times.HasKey("message")) {
             error("LoadMapRecords: API request returned an error message: " + string(map_times["message"]));
             return;
@@ -206,9 +205,6 @@ namespace MyJson
 
         for (uint i = 0; i < map_times.Length; i++)
         {
-            uint j;
-            campaign.mapid_to_maps_array_index.Get(map_times[i]["mapId"], j);
-            Map@ map = campaign.maps[j];
             if (map_times[i]["accountId"] == Api::s314ke_id && map.s314ke_medal_time > uint(map_times[i]["recordScore"]["time"]))
                 map.s314ke_medal_time = map_times[i]["recordScore"]["time"];
             if (map_times[i]["accountId"] == Api::GetWSID())

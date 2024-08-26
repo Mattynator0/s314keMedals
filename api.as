@@ -5,6 +5,17 @@ namespace Api
     string GetWSID() { return cast<CGameManiaPlanet>(GetApp()).MenuManager.MenuCustom_CurrentManiaApp.LocalUser.WebServicesUserId; }
     string GetRecordsReqUrlBase() { return "https://prod.trackmania.core.nadeo.online/v2/mapRecords/?accountIdList=" 
                                         + GetWSID() + "," + s314ke_id + "&mapId=";}
+    string GetCampaignsReqUrlBase(const CampaignType&in campaign_type)
+    {
+        if (campaign_type == CampaignType::Nadeo)
+            return "https://live-services.trackmania.nadeo.live/api/token/campaign/official?offset=0&length=1000"; // 1000 to get all of them
+        else if (campaign_type == CampaignType::Totd)
+            return "https://live-services.trackmania.nadeo.live/api/token/campaign/month?offset=0&length=1000"; // 1000 to get all of them
+        else if (campaign_type == CampaignType::Other)
+            return "https://openplanet.dev/plugin/s314kemedals/config/other_campaigns";
+        else 
+            return "";
+    }
     
     void AddUserAgent(Net::HttpRequest@ req)
     {
@@ -41,34 +52,25 @@ namespace Api
     void OnMapChanged(const string&in last_map_uid) 
     {
         Map@ last_map;
-
         if (!MyJson::map_uid_to_handle.Exists(last_map_uid))
             return;
 
         MyJson::map_uid_to_handle.Get(last_map_uid, @last_map);
-        string req_url = GetRecordsReqUrlBase() + last_map.id;
 
-        LoadMapsRecordsCoroutineData map_data(req_url, last_map.campaign);
-        last_map.campaign.coroutines_running++;
-        startnew(LoadMapsRecordsCoroutine, map_data);
+        last_map.campaign.map_records_coroutines_running++;
+        startnew(CoroutineFuncUserdata(LoadRecordsForSingleMapCoro), LoadRecordsForSingleMapCoroData(last_map, true));
     }
 
     // -------------------------------------------------------------------------------------------------
     // ------------------------------------- LOADING CAMPAIGNS DATA -------------------------------------
     // -------------------------------------------------------------------------------------------------
 
-    void LoadListOfCampaigns(array<Campaign@>@ campaigns, const CampaignType&in campaign_type)
+    void LoadListOfCampaigns(array<Campaign@>@ campaigns_list, const CampaignType&in campaign_type)
     {
-        campaigns.Resize(0);
-        string req_url;
-        if (campaign_type == CampaignType::Nadeo)
-            req_url = "https://live-services.trackmania.nadeo.live/api/token/campaign/official?offset=0&length=1000"; // 1000 to get all of them
-        else if (campaign_type == CampaignType::Totd)
-            req_url = "https://live-services.trackmania.nadeo.live/api/token/campaign/month?offset=0&length=1000"; // 1000 to get all of them
-        else if (campaign_type == CampaignType::Other)
-            req_url = "https://openplanet.dev/plugin/s314kemedals/config/other_campaigns";
+        campaigns_list.Resize(0);
+        string req_url = GetCampaignsReqUrlBase(campaign_type);
 
-        LoadListOfCampaignsCoroutineData data(req_url, campaigns, campaign_type);
+        LoadListOfCampaignsCoroutineData data(req_url, campaigns_list, campaign_type);
         if (campaign_type == CampaignType::Other)
             startnew(CoroutineFuncUserdata(LoadListOfCampaignsCoroutineOther), data);
         else
@@ -78,12 +80,12 @@ namespace Api
     class LoadListOfCampaignsCoroutineData
     {
         string req_url;
-        array<Campaign@>@ campaigns;
+        array<Campaign@>@ campaigns_list;
         CampaignType campaign_type;
 
-        LoadListOfCampaignsCoroutineData(const string &in req_url, array<Campaign@>@ campaigns, const CampaignType&in campaign_type) {
+        LoadListOfCampaignsCoroutineData(const string &in req_url, array<Campaign@>@ campaigns_list, const CampaignType&in campaign_type) {
             this.req_url = req_url;
-            @this.campaigns = campaigns;
+            @this.campaigns_list = campaigns_list;
             this.campaign_type = campaign_type;
         }
     }
@@ -97,7 +99,7 @@ namespace Api
         req.Start();
         while (!req.Finished()) yield();
 
-        MyJson::LoadListOfCampaignsFromJson(req.Json(), data.campaigns, data.campaign_type);
+        MyJson::LoadListOfCampaignsFromJson(req.Json(), data.campaigns_list, data.campaign_type);
     }
 
     void LoadListOfCampaignsCoroutineOther(ref@ _data)
@@ -121,7 +123,7 @@ namespace Api
 
             auto other_json = req.Json();
             other_json["shortName"] = config[i]["shortName"];
-            MyJson::LoadListOfCampaignsFromJson(other_json, data.campaigns, CampaignType::Other);
+            MyJson::LoadListOfCampaignsFromJson(other_json, data.campaigns_list, CampaignType::Other);
         }
     }
 
@@ -130,12 +132,13 @@ namespace Api
     // ---------------------------------------------------------------------------------------------
 
     bool load_maps_lock = false;
+    // loads maps data (including records) for the specified campaign
     void LoadMaps(Campaign@ campaign)
     {
         // prevents loading the same campaign multiple times after spamming the button before the 'maps_loaded' flag is set
         while (load_maps_lock) yield();
 
-        if (campaign.maps_loaded) return;
+        if (campaign.maps_loaded || campaign.AreRecordsLoading()) return;
         load_maps_lock = true;
 
         string req_url = "https://live-services.trackmania.nadeo.live/api/token/map/get-multiple?mapUidList=";
@@ -146,57 +149,72 @@ namespace Api
         while (!req.Finished()) yield();
         
         MyJson::LoadCampaignContents(campaign, req.Json());
-
-        LoadMapsRecords(campaign);
-        campaign.maps_loaded = true;
+        startnew(CoroutineFuncUserdata(LoadMapsCoro), LoadMapsCoroData(campaign));
+        
         load_maps_lock = false;
-
-        MyJson::SaveMapsDataToJson(campaign);
     }
 
-    void LoadMapsRecords(Campaign@ campaign)
+    
+    class LoadMapsCoroData
     {
-        campaign.coroutines_running = campaign.maps.Length;
-        for (uint i = 0; i < campaign.maps.Length; i++)
-        {
-            string req_url = GetRecordsReqUrlBase();
-            req_url += campaign.maps[i].id;
-
-            LoadMapsRecordsCoroutineData coroutine_data(req_url, campaign);
-
-            startnew(CoroutineFuncUserdata(LoadMapsRecordsCoroutine), coroutine_data);
-        }
-    }
-
-    class LoadMapsRecordsCoroutineData
-    {
-        string req_url;
         Campaign@ campaign;
 
-        LoadMapsRecordsCoroutineData(const string &in req_url, Campaign@ campaign) {
-            this.req_url = req_url;
+        LoadMapsCoroData(Campaign@ campaign) {
             @this.campaign = campaign;
         }
     }
 
-    // requests records for a single map and puts them into a data structure
-    void LoadMapsRecordsCoroutine(ref@ _data) 
+    void LoadMapsCoro(ref@ _data)
     {
-        auto data = cast<LoadMapsRecordsCoroutineData>(_data);
+        auto data = cast<LoadMapsCoroData>(_data);
+        auto @maps = data.campaign.maps;
+        
+        data.campaign.map_records_coroutines_running = maps.Length;
+        for (uint i = 0; i < maps.Length; i++)
+            startnew(CoroutineFuncUserdata(LoadRecordsForSingleMapCoro), LoadRecordsForSingleMapCoroData(maps[i], true));
 
-        Net::HttpRequest@ req = NadeoServices::Get("NadeoServices", data.req_url);
+        while (data.campaign.AreRecordsLoading()) yield(); // wait for the map records before saving data
+        
+        data.campaign.maps_loaded = true;
+        MyJson::SaveMapsDataToJson(data.campaign);
+    }
+    
+    class LoadRecordsForSingleMapCoroData
+    {
+        Map@ map;
+        bool decrement_counter;
+
+        LoadRecordsForSingleMapCoroData(Map@ map, bool decrement_counter) {
+            @this.map = map;
+            this.decrement_counter = decrement_counter;
+        }
+    }
+
+    void LoadRecordsForSingleMapCoro(ref@ _data)
+    {
+        auto data = cast<LoadRecordsForSingleMapCoroData>(_data);
+        string req_url = GetRecordsReqUrlBase() + data.map.id;
+        Net::HttpRequest@ req = NadeoServices::Get("NadeoServices", req_url);
         AddUserAgent(req);
         req.Start();
         while (!req.Finished()) yield();
-        
-        MyJson::LoadMapRecords(data.campaign, req);
-        
-        data.campaign.coroutines_running--;
-        // save records data when all coroutines finish
-        if (!data.campaign.AreRecordsLoading())
+
+        MyJson::LoadRecordsForSingleMap(data.map, req.Json());
+
+        if (data.decrement_counter)
         {
-            data.campaign.RecalculateMedalsCounts();
-            MyJson::SaveMapsDataToJson(data.campaign);
+            if (data.map.campaign is null)
+            {
+                error("Map is not a part of campaign.");
+                return;
+            }
+            data.map.campaign.map_records_coroutines_running--;
+            // save records data when all coroutines finish
+            if (!data.map.campaign.AreRecordsLoading())
+            {
+                data.map.campaign.RecalculateMedalsCounts();
+                MyJson::SaveMapsDataToJson(data.map.campaign);
+            }
         }
     }
 }

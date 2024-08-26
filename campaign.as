@@ -18,7 +18,7 @@ class Campaign
     bool maps_loaded = false;
     dictionary mapid_to_maps_array_index;
 
-    uint coroutines_running = 0;
+    uint map_records_coroutines_running = 0;
 
     uint medals_achieved = 0;
     uint medals_total = 0;
@@ -37,7 +37,12 @@ class Campaign
 
     bool AreRecordsLoading()
     {
-        return coroutines_running > 0;
+        return map_records_coroutines_running > 0;
+    }
+
+    bool AreRecordsReady()
+    {
+        return maps_loaded && !AreRecordsReady();
     }
 
     private string CreateShortName()

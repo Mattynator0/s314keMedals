@@ -108,8 +108,9 @@ namespace CampaignManager
                 Api::LoadMaps(campaign);
 
             // wait for the map-record-fetching coroutines to all finish to prevent spamming the API too much
-            while (!campaign.maps_loaded || campaign.AreRecordsLoading())
+            while (!campaign.AreRecordsReady())
                 yield();
+
             campaign.RecalculateMedalsCounts();
             medals_achieved[campaign_type] += campaign.medals_achieved;
             medals_total[campaign_type] += campaign.medals_total;
