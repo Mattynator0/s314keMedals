@@ -148,8 +148,8 @@ class Browser
 			}
 			else
 			{
-				string medal_counter_text = base_circle + " " + CampaignManager::medals_achieved[current_tab] + 
-											" / " + CampaignManager::medals_total[current_tab];
+				string medal_counter_text = base_circle + " " + CampaignManager::GetCategory(current_tab).medals_achieved + 
+											" / " + CampaignManager::GetCategory(current_tab).medals_total;
 				UI::PushFont(base_normal_font);
 				CenterText(medal_counter_text, vec2(-20, 70));
 				UI::SameLine();
@@ -158,7 +158,7 @@ class Browser
 					CampaignManager::ReloadAllCampaignMaps(current_tab);
 				}
 				UI::PopFont(); // small
-				if (CampaignManager::medals_calculating[current_tab]) {
+				if (CampaignManager::GetCategory(current_tab).medals_calculating) {
 					CenterText("Loading...", vec2(0, 125));
 				}
 				UI::PopFont(); // normal
@@ -221,7 +221,7 @@ class Browser
 
 	void DrawCampaignSelectionMenuTabTable()
 	{
-		if (!CampaignManager::campaigns_loaded[current_tab])
+		if (!CampaignManager::GetCategory(current_tab).campaigns_loaded)
 		{
 			UI::Text("Loading...");
 			return;
@@ -276,7 +276,7 @@ class Browser
 		const uint buttons_per_row = Math::Max(1, uint(UI::GetWindowSize().x / (button_size.x + 2 * button_padding)));
 
 		UI::BeginChild("TableWrapper", vec2(), false, UI::WindowFlags::NoScrollbar);
-		if (!CampaignManager::campaigns_loaded[current_tab])
+		if (!CampaignManager::GetCategory(current_tab).campaigns_loaded)
 		{
 			UI::Text("Loading...");
 			UI::EndChild(); // "TableWrapper"

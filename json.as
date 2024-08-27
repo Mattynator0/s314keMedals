@@ -1,10 +1,8 @@
 namespace MyJson
 {
-    array<Json::Value> campaign_jsons;
     const string test_path = IO::FromStorageFolder("test.json");
 
     dictionary map_uid_to_handle;
-    bool reload_campaigns = true;
 
     // ----------------------------------------------------------------------------------------
     // ------------------------------------- DATA CACHING -------------------------------------
@@ -75,76 +73,6 @@ namespace MyJson
         campaign.maps_loaded = true;
     }
     
-    // ----------------------------------------------------------------------------------------------------
-    // ------------------------------------- CAMPAIGNS INITIALIZATION -------------------------------------
-    // ----------------------------------------------------------------------------------------------------
-
-    void InitCampaigns()
-    {
-        for (uint i = 0; i < CampaignType::Count; i++) 
-        {
-            CampaignManager::campaigns_master_array.InsertLast(array<Campaign@>());
-            campaign_jsons.InsertLast(Json::Object());
-        }
-        campaign_jsons[CampaignType::Other]["campaignList"] = Json::Array();
-
-        if (reload_campaigns)
-        {
-            for (uint i = 0; i < CampaignType::Count; i++) 
-            {
-                Api::LoadListOfCampaigns(CampaignManager::campaigns_master_array[i], CampaignType(i));
-            }
-            return;
-        }
-    }
-
-    void LoadListOfCampaignsFromJson(Json::Value@ json, array<Campaign@>@ campaigns_list, const CampaignType&in campaign_type)
-    {
-        uint other_index;
-        if (campaign_type == CampaignType::Other)
-        {
-            // already keep track of the index because more jsons may get added before the index is used
-            other_index = campaign_jsons[campaign_type]["campaignList"].Length;
-            campaign_jsons[campaign_type]["campaignList"].Add(json);
-        }
-        else
-            campaign_jsons[campaign_type] = json;
-
-        Json::ToFile(IO::FromStorageFolder("campaigns/" + tostring(campaign_type) + ".json"), campaign_jsons[campaign_type]);
-
-        if (campaign_type == CampaignType::Nadeo)
-        {
-            auto @campaign_json = campaign_jsons[CampaignType::Nadeo];
-            for (uint i = 0; i < campaign_json["campaignList"].Length; i++)
-            {
-                string name = campaign_json["campaignList"][i]["name"];
-                Campaign campaign(name, name, campaign_type, i);
-                campaigns_list.InsertLast(campaign);
-            }
-        }
-        else if (campaign_type == CampaignType::Totd)
-        {
-            auto @campaign_json = campaign_jsons[CampaignType::Totd];
-            array<string> month_names = {"January", "February", "March", "April", "May", "June", 
-                                         "July", "August", "September", "October", "November", "December"};
-            for (uint i = 0; i < campaign_json["monthList"].Length; i++)
-            {
-                string name = month_names[uint(campaign_json["monthList"][i]["month"]) - 1] // -1 because in the json, January is 1
-                                    + " " + Json::Write(campaign_json["monthList"][i]["year"]);
-                Campaign campaign(name, name, campaign_type, i);
-                campaigns_list.InsertLast(campaign);
-            }
-        }
-        else if (campaign_type == CampaignType::Other)
-        {
-            string file_name = string(json["name"]) + " " + Json::Write(json["campaignId"]);
-            Campaign campaign(json["name"], file_name, campaign_type, other_index, json["shortName"]);
-            campaigns_list.InsertLast(campaign);
-        }
-        
-        CampaignManager::campaigns_loaded[campaign_type] = true;
-    }
-
     // -----------------------------------------------------------------------------------------------
     // ------------------------------------- MAPS INITIALIZATION -------------------------------------
     // -----------------------------------------------------------------------------------------------
@@ -152,17 +80,18 @@ namespace MyJson
     string GetMapUidsAsString(Campaign@ campaign)
     {
         string result = "";
-        Json::Value @json;
+        Json::Value@ campaigns_json = campaign.campaign_category.campaigns_json;
+        Json::Value@ json;
         switch (campaign.type)
         {
             case CampaignType::Nadeo:
-                @json = campaign_jsons[campaign.type]["campaignList"][campaign.json_index]["playlist"];
+                @json = campaigns_json["campaignList"][campaign.json_index]["playlist"];
                 break;
             case CampaignType::Totd:
-                @json = campaign_jsons[campaign.type]["monthList"][campaign.json_index]["days"];
+                @json = campaigns_json["monthList"][campaign.json_index]["days"];
                 break;
             case CampaignType::Other:
-                @json = campaign_jsons[campaign.type]["campaignList"][campaign.json_index]["campaign"]["playlist"];
+                @json = campaigns_json["campaignList"][campaign.json_index]["campaign"]["playlist"];
                 break;
         }
 

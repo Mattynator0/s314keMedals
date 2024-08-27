@@ -17,18 +17,21 @@ class Campaign
     array<Map> maps;
     bool maps_loaded = false;
     dictionary mapid_to_maps_array_index;
+    CampaignCategory@ campaign_category;
 
     uint map_records_coroutines_running = 0;
 
     uint medals_achieved = 0;
     uint medals_total = 0;
 
-    Campaign(const string&in name, const string&in file_name, const CampaignType&in type, uint json_index, const string&in short_name = "")
+    Campaign(const string&in name, const string&in file_name, const CampaignType&in type, uint json_index, 
+                CampaignCategory@ campaign_category, const string&in short_name = "")
     {
         this.name = name;
         this.file_name = file_name;
         this.type = type;
         this.json_index = json_index;
+        @this.campaign_category = campaign_category;
         this.short_name = (type != CampaignType::Other) ? CreateShortName() : short_name;
 
         MyJson::LoadMapsDataFromJson(@this);
@@ -42,7 +45,7 @@ class Campaign
 
     bool AreRecordsReady()
     {
-        return maps_loaded && !AreRecordsReady();
+        return maps_loaded && !AreRecordsLoading();
     }
 
     private string CreateShortName()
@@ -77,7 +80,7 @@ class Campaign
         medals_achieved = counter_achieved;
         medals_total = counter_total;
 
-        CampaignManager::medals_counts_uptodate[type] = false;
+        campaign_category.medals_counts_uptodate = false;
         CampaignManager::UpdateMedalsCounts(type);
     }
 }
