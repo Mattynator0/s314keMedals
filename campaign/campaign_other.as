@@ -4,20 +4,11 @@ class CategoryOther : CampaignCategory
     {
         super(CampaignType::Other);
         campaigns_json["campaignList"] = Json::Array();
-        // FetchListOfCampaigns();
     }
 
     string GetCampaignsReqUrlBase() override
     {
         return "https://openplanet.dev/plugin/s314kemedals/config/other_campaigns";
-    }
-
-    void FetchListOfCampaigns() override
-    {
-        campaigns_list.Resize(0);
-        string req_url = GetCampaignsReqUrlBase();
-
-        startnew(CoroutineFuncUserdataString(FetchListOfCampaignsCoro), req_url);
     }
 
     void FetchListOfCampaignsCoro(const string&in config_url) override
@@ -31,7 +22,7 @@ class CategoryOther : CampaignCategory
             string req_url = "https://live-services.trackmania.nadeo.live/api/token/club/" +
                         string(config[i]["clubID"]) + "/campaign/" + string(config[i]["campaignID"]);
 
-            // TODO if this is ever done by coroutines, the list of campaigns will have to be sorted or else the order will change every time
+            // !!! if this is ever done by coroutines, the list of campaigns will have to be sorted or else the order will change every time
             auto @req = NadeoServices::Get("NadeoLiveServices", req_url);
             Api::AddUserAgent(req);
             req.Start();
@@ -56,5 +47,10 @@ class CategoryOther : CampaignCategory
         campaigns_list.InsertLast(campaign);
 
         campaigns_loaded = true;
+    }
+
+    void UpdateMedalsCounts() override 
+    {
+        return;
     }
 }

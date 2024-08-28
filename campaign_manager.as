@@ -3,150 +3,101 @@ namespace CampaignManager
     bool initialized = false;
 
     array<CampaignCategory@> campaign_categories;
-	Campaign@ chosen;
+	Campaign@ selected_campaign;
+	CampaignCategory@ selected_category;
 
     void Init()
     {
-        // CategoryNadeo nadeo();
         CampaignManager::campaign_categories.InsertLast(CategoryNadeo());
         CampaignManager::campaign_categories.InsertLast(CategoryTotd());
         CampaignManager::campaign_categories.InsertLast(CategoryOther());
         initialized = true;
+
+        for (uint i = 0; i < campaign_categories.Length; i++)
+		{
+			campaign_categories[i].UpdateMedalsCounts();
+		}
     }
 
     void ReloadOtherCampaignsList()
     {
+        // TODO check if this still works the way it should
         campaign_categories[CampaignType::Other].FetchListOfCampaigns();
     }
 
-    void ChooseCampaign(const CampaignType&in campaign_type, uint index)
+    void SelectCategory(const CampaignType&in campaign_type)
     {
-        @chosen = GetCampaign(campaign_type, index);
-
-        if (!chosen.maps_loaded)
-            startnew(CoroutineFunc(LoadChosenCampaignMaps));
+        @selected_category = campaign_type;
     }
 
-    void LoadChosenCampaignMaps()
+    void SelectCampaign(const CampaignType&in campaign_type, uint index)
     {
-        Api::FetchMapsInfo(chosen);
+        @selected_campaign = campaign_categories[campaign_type].campaigns_list[index];
+
+        if (!selected_campaign.maps_loaded)
+            startnew(CoroutineFunc(FetchSelectedCampaignMaps));
     }
 
-    void ReloadChosenCampaignMaps()
+    void FetchSelectedCampaignMaps()
     {
-        if (chosen.type == CampaignType::Other)
+        Api::FetchMapsInfo(selected_campaign);
+    }
+
+    void ReloadSelectedCampaignMaps()
+    {
+        if (selected_campaign.type == CampaignType::Other)
         {
-            chosen.maps_loaded = false;
-            startnew(CoroutineFunc(LoadChosenCampaignMaps));
+            selected_campaign.maps_loaded = false;
+            startnew(CoroutineFunc(FetchSelectedCampaignMaps));
             return;
         }
 
-        if (!ChosenCategory().medals_calculating) // prevent setting the flag back to false after the maps already got loaded by a different coroutine
+        if (!selected_category.medals_calculating) // prevent setting the flag back to false after the maps already got loaded by a different coroutine
         {
-            chosen.maps_loaded = false;
-            ChosenCategory().medals_counts_uptodate = false;
+            // FIXME could this break if selected campaign is part of the selected category?
+            selected_campaign.maps_loaded = false;
+            selected_category.medals_counts_uptodate = false;
         }
-        UpdateMedalsCounts(chosen.type);
+        selected_category.UpdateMedalsCounts();
     }
 
-    void ReloadAllCampaignMaps(const CampaignType&in campaign_type)
+    void ReloadCurrentCategory()
     {
-        if (!ChosenCategory().medals_calculating) // prevent setting the flag back to false after the maps already got loaded by a different coroutine
-        {
-            for (uint i = 0; i < campaign_categories[campaign_type].campaigns_list.Length; i++)
-                campaign_categories[campaign_type].campaigns_list[i].maps_loaded = false;
-
-            ChosenCategory().medals_counts_uptodate = false;
-        }
-        UpdateMedalsCounts(campaign_type);
+        selected_category.ReloadAllCampaignMaps();
     }
 
-    void UpdateMedalsCounts(const CampaignType&in campaign_type)
+    uint GetCampaignsCount()
     {
-        if (campaign_type == CampaignType::Other)
-            return;
-
-        if (!ChosenCategory().medals_counts_uptodate && 
-            !ChosenCategory().medals_calculating)
-            startnew(CoroutineFuncUserdata(UpdateMedalsCountsCoroutine), UpdateMedalsCountsCoroutineData(campaign_type));
+        return selected_category.campaigns_list.Length;
     }
 
-    class UpdateMedalsCountsCoroutineData
+    CampaignCategory@ GetSelectedCategory()
     {
-        CampaignType campaign_type;
-        UpdateMedalsCountsCoroutineData(const CampaignType&in campaign_type) {this.campaign_type = campaign_type;}
+        return selected_category;
     }
 
-    void UpdateMedalsCountsCoroutine(ref@ _campaign_type)
+    Campaign@ GetCampaign(uint index)
     {
-        CampaignType campaign_type = cast<UpdateMedalsCountsCoroutineData>(_campaign_type).campaign_type;
-        campaign_categories[campaign_type].medals_calculating = true;
-
-        // wait for the category of campaigns to load
-        while (!campaign_categories[campaign_type].campaigns_loaded)
-            yield();
-
-        campaign_categories[campaign_type].medals_achieved = 0;
-        campaign_categories[campaign_type].medals_total = 0;
-        for (uint i = 0; i < campaign_categories[campaign_type].campaigns_list.Length; i++)
-        {
-            Campaign@ campaign = campaign_categories[campaign_type].campaigns_list[i];
-            // campaign loads the maps data from plugin storage in the constructor, so if it's not loaded then that data is not locally available
-            if (!campaign.maps_loaded)
-                Api::FetchMapsInfo(campaign);
-
-            // wait for the map-record-fetching coroutines to all finish to prevent spamming the API too much
-            while (!campaign.AreRecordsReady())
-                yield();
-
-            campaign.RecalculateMedalsCounts();
-            campaign_categories[campaign_type].medals_achieved += campaign.medals_achieved;
-            campaign_categories[campaign_type].medals_total += campaign.medals_total;
-        }
-
-        campaign_categories[campaign_type].medals_counts_uptodate = true;
-        campaign_categories[campaign_type].medals_calculating = false;
+        return selected_category.campaigns_list[index];
     }
 
-    uint GetCampaignsCount(const CampaignType&in campaign_type)
+    string GetCampaignName()
     {
-        return campaign_categories[campaign_type].campaigns_list.Length;
-    }
-
-    Campaign@ GetCampaign(const CampaignType&in campaign_type, uint index)
-    {
-        return campaign_categories[campaign_type].campaigns_list[index];
-    }
-
-    string GetChosenCampaignName()
-    {
-        return chosen.name;
+        return selected_campaign.name;
     }
 
     Map GetMap(uint index)
     {
-        return chosen.maps[index];
+        return selected_campaign.maps[index];
     }
 
     uint GetMapsCount()
     {
-        return chosen.maps.Length;
+        return selected_campaign.maps.Length;
     }
 
-    bool AreRecordsLoading()
+    bool AreCampaignRecordsLoading()
     {
-        return chosen.AreRecordsLoading();
-    }
-
-    CampaignCategory@ GetCategory(CampaignType campaign_type)
-    {
-        return campaign_categories[campaign_type];
-    }
-
-    CampaignCategory@ ChosenCategory() 
-    {
-        if (chosen is null)
-            return campaign_categories[CampaignType::Nadeo];
-        return campaign_categories[chosen.type];
+        return selected_campaign.AreRecordsLoading();
     }
 }

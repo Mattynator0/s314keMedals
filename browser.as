@@ -8,7 +8,6 @@ class Browser
 	vec4 brightest_color = vec4(0.25, 0.25, 0.9, 1.0);
 	string base_circle = "\\$21a" + Icons::Circle + "\\$fff ";
 
-	CampaignType current_tab;
 	bool show_only_unbeaten_medals = false;
 	bool tiles_display = true;
 
@@ -29,10 +28,6 @@ class Browser
 		@base_small_font = UI::LoadFont("DroidSans.ttf", 16, -1, -1 , true, true, true);
 
 		CampaignManager::Init();
-		for (uint i = 0; i < CampaignType::Count; i++)
-		{
-			CampaignManager::UpdateMedalsCounts(CampaignType(i));
-		}
 	}
 
 	void RenderMenu() 
@@ -84,14 +79,14 @@ class Browser
 		// ------------------------------------------------ RIGHT SIDE ------------------------------------------------
 		
 		// leave the right side empty until a campaign is chosen
-		if (CampaignManager::chosen is null)
+		if (CampaignManager::selected_campaign is null)
 		{
 			UI::End(); // "s314ke Medals"
 			UI::PopStyleColor(6); // Separator and Button
 			return;
 		}
 
-		if (!CampaignManager::chosen.maps_loaded)
+		if (!CampaignManager::selected_campaign.maps_loaded)
 		{
 			UI::Text("Loading...");
 			UI::End(); // "s314ke Medals"
@@ -134,7 +129,7 @@ class Browser
 			CenterText(base_circle + " s314ke Medals", vec2(0, -20));
 			UI::PopFont();
 	
-			if (current_tab == CampaignType::Other)
+			if (CampaignManager::selected_category == CampaignType::Other)
 			{
 				UI::PushFont(base_normal_font);
 				CenterText("Refresh list", vec2(-10, 70));
@@ -148,17 +143,17 @@ class Browser
 			}
 			else
 			{
-				string medal_counter_text = base_circle + " " + CampaignManager::GetCategory(current_tab).medals_achieved + 
-											" / " + CampaignManager::GetCategory(current_tab).medals_total;
+				string medal_counter_text = base_circle + " " + CampaignManager::GetSelectedCategory().medals_achieved + 
+											" / " + CampaignManager::GetSelectedCategory().medals_total;
 				UI::PushFont(base_normal_font);
 				CenterText(medal_counter_text, vec2(-20, 70));
 				UI::SameLine();
 				UI::PushFont(base_small_font);
 				if (UI::Button(Icons::Refresh)) {
-					CampaignManager::ReloadAllCampaignMaps(current_tab);
+					CampaignManager::ReloadCurrentCategory();
 				}
 				UI::PopFont(); // small
-				if (CampaignManager::GetCategory(current_tab).medals_calculating) {
+				if (CampaignManager::GetSelectedCategory().medals_calculating) {
 					CenterText("Loading...", vec2(0, 125));
 				}
 				UI::PopFont(); // normal
@@ -193,7 +188,7 @@ class Browser
 
 		if (UI::BeginTabItem("Campaigns"))
 		{
-			current_tab = CampaignType::Nadeo;
+			CampaignManager::SelectCategory(CampaignType::Nadeo);
 			if (tiles_display)
 				DrawCampaignSelectionMenuTabTiles();
 			else DrawCampaignSelectionMenuTabTable();
@@ -201,7 +196,7 @@ class Browser
 		}
 		if (UI::BeginTabItem("Track of the Day"))
 		{
-			current_tab = CampaignType::Totd;
+			CampaignManager::SelectCategory(CampaignType::Totd);
 			if (tiles_display)
 				DrawCampaignSelectionMenuTabTiles();
 			else DrawCampaignSelectionMenuTabTable();
@@ -209,7 +204,7 @@ class Browser
 		}
 		if (UI::BeginTabItem("Other"))
 		{
-			current_tab = CampaignType::Other;
+			CampaignManager::SelectCategory(CampaignType::Other);
 			if (tiles_display)
 				DrawCampaignSelectionMenuTabTiles();
 			else DrawCampaignSelectionMenuTabTable();
@@ -221,7 +216,7 @@ class Browser
 
 	void DrawCampaignSelectionMenuTabTable()
 	{
-		if (!CampaignManager::GetCategory(current_tab).campaigns_loaded)
+		if (!CampaignManager::GetSelectedCategory().campaigns_loaded)
 		{
 			UI::Text("Loading...");
 			return;
@@ -239,10 +234,10 @@ class Browser
 
 			UI::TableHeadersRow();
 
-			for (uint i = 0; i < CampaignManager::GetCampaignsCount(current_tab); i++)
+			for (uint i = 0; i < CampaignManager::GetCampaignsCount(); i++)
 			{
 				UI::TableNextRow(UI::TableRowFlags::None, 30);
-				Campaign@ campaign = CampaignManager::GetCampaign(current_tab, i);
+				Campaign@ campaign = CampaignManager::GetCampaign(i);
 
 				UI::TableNextColumn(); // "Name"
 				UI::AlignTextToFramePadding();
@@ -259,7 +254,7 @@ class Browser
 				UI::PushFont(base_small_font);
 				UI::PushID("CampaignButton" + tostring(i));
 				if (UI::Button(Icons::Play))
-					CampaignManager::ChooseCampaign(current_tab, i);
+					CampaignManager::SelectCampaign(i);
 				UI::PopID();
 				UI::PopFont(); // small
 			}
@@ -276,7 +271,7 @@ class Browser
 		const uint buttons_per_row = Math::Max(1, uint(UI::GetWindowSize().x / (button_size.x + 2 * button_padding)));
 
 		UI::BeginChild("TableWrapper", vec2(), false, UI::WindowFlags::NoScrollbar);
-		if (!CampaignManager::GetCategory(current_tab).campaigns_loaded)
+		if (!CampaignManager::GetSelectedCategory().campaigns_loaded)
 		{
 			UI::Text("Loading...");
 			UI::EndChild(); // "TableWrapper"
@@ -286,7 +281,7 @@ class Browser
 		{
 			UI::PushStyleVar(UI::StyleVar::FrameRounding, 10);
 
-			uint campaign_count = CampaignManager::GetCampaignsCount(current_tab);
+			uint campaign_count = CampaignManager::GetCampaignsCount();
 
 			// button spacing (value of 'a' is fixed)
 			//  
@@ -299,7 +294,7 @@ class Browser
 			// 
 			for (uint i = 0; i < campaign_count; i++)
 			{
-				Campaign@ campaign = CampaignManager::GetCampaign(current_tab, i);
+				Campaign@ campaign = CampaignManager::GetCampaign(i);
 				UI::TableNextColumn();
 				UI::Dummy(vec2(0, 2 * button_padding));
 					
@@ -313,11 +308,12 @@ class Browser
 				UI::PushID("CampaignButton" + tostring(i));
 				if (UI::Button("", button_size))
 				{
-					CampaignManager::ChooseCampaign(current_tab, i);
+					CampaignManager::SelectCampaign(i);
 				}
 				UI::PopID();
 				
-				if (current_tab == CampaignType::Other)
+				// TODO add encapsulation for this
+				if (CampaignManager::GetSelectedCategory().campaign_type == CampaignType::Other)
 				{
 					UI::PushFont(base_large_font);
 					if (Draw::MeasureString(campaign.short_name).x > button_size.x - 14) {
@@ -374,23 +370,23 @@ class Browser
 			UI::BeginChild("CampaignName");
 			// center the text
 			vec2 container_size = UI::GetContentRegionAvail();
-			vec2 campaignname_text_size = Draw::MeasureString(CampaignManager::GetChosenCampaignName());
+			vec2 campaignname_text_size = Draw::MeasureString(CampaignManager::GetCampaignName());
 			UI::SetCursorPos((container_size - campaignname_text_size) * 0.5f);
-			UI::Text(CampaignManager::GetChosenCampaignName()); // full campaign name
+			UI::Text(CampaignManager::GetCampaignName()); // full campaign name
 			UI::EndChild(); // "CampaignName"
 			
 			UI::TableNextColumn();
 			UI::BeginChild("CampaignMedalCounter");
-			string medalcounter_text = base_circle + " " + tostring(CampaignManager::chosen.medals_achieved) 
-							   + " / " + tostring(CampaignManager::chosen.medals_total);
+			string medalcounter_text = base_circle + " " + tostring(CampaignManager::selected_campaign.medals_achieved) 
+							   + " / " + tostring(CampaignManager::selected_campaign.medals_total);
 			container_size = UI::GetContentRegionAvail();
 			vec2 medalcounter_text_size = Draw::MeasureString(medalcounter_text);
 			UI::SetCursorPos((container_size - medalcounter_text_size) * 0.5f + vec2(-10, 0)); // -10 to account for the refresh button
 			UI::Text(medalcounter_text);
 			UI::SameLine();
 			UI::PushFont(base_small_font);
-			if (!CampaignManager::AreRecordsLoading() && UI::Button(Icons::Refresh)) {
-				CampaignManager::ReloadChosenCampaignMaps();
+			if (!CampaignManager::AreCampaignRecordsLoading() && UI::Button(Icons::Refresh)) {
+				CampaignManager::ReloadSelectedCampaignMaps();
 			}
 			UI::PopFont(); // small
 			UI::EndChild(); // "CampaignMedalCounter"
@@ -413,10 +409,10 @@ class Browser
 		UI::PushStyleColor(UI::Col::TableRowBg, vec4(.25, .25, .25, .2));
 		UI::PushFont(base_small_font);
 
-		uint n_columns = CampaignManager::chosen.type == CampaignType::Totd ? 7 : 6;
+		uint n_columns = CampaignManager::selected_campaign.type == CampaignType::Totd ? 7 : 6;
 		if (UI::BeginTable("MapsTable", n_columns, UI::TableFlags::RowBg | UI::TableFlags::ScrollY | UI::TableFlags::PadOuterX))
 		{
-			if (CampaignManager::chosen.type == CampaignType::Totd)
+			if (CampaignManager::selected_campaign.type == CampaignType::Totd)
 				UI::TableSetupColumn("##day", UI::TableColumnFlags::WidthFixed);
 			UI::TableSetupColumn("Name", UI::TableColumnFlags::WidthStretch, 2);
 			UI::TableSetupColumn("##padding", UI::TableColumnFlags::WidthFixed);
@@ -437,7 +433,7 @@ class Browser
 
 				UI::TableNextRow(UI::TableRowFlags::None, 30);
 
-				if (CampaignManager::chosen.type == CampaignType::Totd) 
+				if (CampaignManager::selected_campaign.type == CampaignType::Totd) 
 				{
 					UI::TableNextColumn(); // "##day"
 					UI::AlignTextToFramePadding();
