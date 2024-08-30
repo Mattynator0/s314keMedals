@@ -105,7 +105,7 @@ namespace MyJson
         return result;
     }
 
-    void LoadCampaignContents(Campaign@ campaign, Json::Value@ maps_info)
+    void LoadMapsInfo(Campaign@ campaign, Json::Value@ maps_info)
     {
         campaign.maps.Resize(0);
         for (uint i = 0; i < maps_info["mapList"].Length; i++)

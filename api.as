@@ -47,7 +47,6 @@ namespace Api
         MyJson::map_uid_to_handle.Get(last_map_uid, @last_map);
 
         last_map.campaign.map_records_coroutines_running++;
-        // FIXME new pb is fetched but not visible in the UI?
         startnew(CoroutineFuncUserdata(FetchRecordsForSingleMapCoro), 
                  FetchRecordsForSingleMapCoroData(last_map, true));
     }
@@ -56,15 +55,15 @@ namespace Api
     // ------------------------------------- LOADING MAPS DATA -------------------------------------
     // ---------------------------------------------------------------------------------------------
 
-    bool load_maps_lock = false;
+    bool fetch_maps_lock = false;
     // loads maps data (including records) for the specified campaign
     void FetchMapsInfo(Campaign@ campaign)
     {
         // prevents loading the same campaign multiple times after spamming the button before the 'maps_loaded' flag is set
-        while (load_maps_lock) yield();
+        while (fetch_maps_lock) yield();
 
         if (campaign.maps_loaded || campaign.AreRecordsLoading()) return;
-        load_maps_lock = true;
+        fetch_maps_lock = true;
 
         string req_url = "https://live-services.trackmania.nadeo.live/api/token/map/get-multiple?mapUidList=";
         req_url += MyJson::GetMapUidsAsString(campaign);
@@ -73,36 +72,26 @@ namespace Api
         req.Start();
         while (!req.Finished()) yield();
         
-        MyJson::LoadCampaignContents(campaign, req.Json());
-        startnew(CoroutineFuncUserdata(FetchMapsInfoCoro), FetchMapsInfoCoroData(campaign));
+        MyJson::LoadMapsInfo(campaign, req.Json());
+        startnew(CoroutineFuncUserdata(FetchMapsInfoCoro), campaign);
         
-        load_maps_lock = false;
-    }
-
-    
-    class FetchMapsInfoCoroData
-    {
-        Campaign@ campaign;
-
-        FetchMapsInfoCoroData(Campaign@ campaign) {
-            @this.campaign = campaign;
-        }
     }
 
     void FetchMapsInfoCoro(ref@ _data)
     {
-        auto data = cast<FetchMapsInfoCoroData>(_data);
-        auto @maps = data.campaign.maps;
+        Campaign@ campaign = cast<Campaign>(_data);
+        auto @maps = campaign.maps;
         
-        data.campaign.map_records_coroutines_running = maps.Length;
+        campaign.map_records_coroutines_running = maps.Length;
         for (uint i = 0; i < maps.Length; i++)
             startnew(CoroutineFuncUserdata(FetchRecordsForSingleMapCoro), 
                      FetchRecordsForSingleMapCoroData(maps[i], true));
 
-        while (data.campaign.AreRecordsLoading()) yield(); // wait for the map records before saving data
+        while (campaign.AreRecordsLoading()) yield(); // wait for the map records before saving data
         
-        data.campaign.maps_loaded = true;
-        MyJson::SaveMapsDataToJson(data.campaign);
+        campaign.maps_loaded = true;
+        fetch_maps_lock = false;
+        MyJson::SaveMapsDataToJson(campaign);
     }
     
     class FetchRecordsForSingleMapCoroData

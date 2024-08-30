@@ -23,7 +23,7 @@ class CampaignCategory
         return "";
     }
 
-    void FetchListOfCampaigns() override
+    void FetchListOfCampaigns()
     {
         campaigns_list.Resize(0);
         string req_url = GetCampaignsReqUrlBase();
@@ -31,7 +31,7 @@ class CampaignCategory
         startnew(CoroutineFuncUserdataString(FetchListOfCampaignsCoro), req_url);
     }
 
-    void FetchListOfCampaignsCoro(const string&in req_url) override
+    void FetchListOfCampaignsCoro(const string&in req_url)
     {
         auto @req = NadeoServices::Get("NadeoLiveServices", req_url);
         Api::AddUserAgent(req);
@@ -53,14 +53,13 @@ class CampaignCategory
 
             medals_counts_uptodate = false;
         }
-        UpdateMedalsCounts(campaign_type);
+        UpdateMedalsCounts();
     }
 
     void UpdateMedalsCounts()
     {
-        if (!medals_counts_uptodate && 
-            !medals_calculating)
-            startnew(UpdateMedalsCountsCoroutine);
+        if (!medals_counts_uptodate && !medals_calculating)
+            startnew(CoroutineFunc(UpdateMedalsCountsCoroutine));
     }
 
     void UpdateMedalsCountsCoroutine()

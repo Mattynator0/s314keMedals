@@ -11,6 +11,7 @@ namespace CampaignManager
         CampaignManager::campaign_categories.InsertLast(CategoryNadeo());
         CampaignManager::campaign_categories.InsertLast(CategoryTotd());
         CampaignManager::campaign_categories.InsertLast(CategoryOther());
+        SelectCategory(CampaignType::Nadeo);
         initialized = true;
 
         for (uint i = 0; i < campaign_categories.Length; i++)
@@ -27,15 +28,33 @@ namespace CampaignManager
 
     void SelectCategory(const CampaignType&in campaign_type)
     {
-        @selected_category = campaign_type;
+        @selected_category = campaign_categories[campaign_type];
     }
 
-    void SelectCampaign(const CampaignType&in campaign_type, uint index)
+    void SelectCampaign(uint index)
     {
-        @selected_campaign = campaign_categories[campaign_type].campaigns_list[index];
+        @selected_campaign = selected_category.campaigns_list[index];
 
         if (!selected_campaign.maps_loaded)
             startnew(CoroutineFunc(FetchSelectedCampaignMaps));
+    }
+
+    void ReloadCampaignMaps(uint index)
+    {
+        Campaign@ campaign = selected_category.campaigns_list[index];
+        if (campaign.type == CampaignType::Other)
+        {
+            campaign.maps_loaded = false;
+            startnew(CoroutineFunc(FetchSelectedCampaignMaps));
+            return;
+        }
+
+        if (!selected_category.medals_calculating) // prevent setting the flag back to false after the maps already got loaded by a different coroutine
+        {
+            campaign.maps_loaded = false;
+            selected_category.medals_counts_uptodate = false;
+        }
+        selected_category.UpdateMedalsCounts();
     }
 
     void FetchSelectedCampaignMaps()
@@ -45,20 +64,7 @@ namespace CampaignManager
 
     void ReloadSelectedCampaignMaps()
     {
-        if (selected_campaign.type == CampaignType::Other)
-        {
-            selected_campaign.maps_loaded = false;
-            startnew(CoroutineFunc(FetchSelectedCampaignMaps));
-            return;
-        }
-
-        if (!selected_category.medals_calculating) // prevent setting the flag back to false after the maps already got loaded by a different coroutine
-        {
-            // FIXME could this break if selected campaign is part of the selected category?
-            selected_campaign.maps_loaded = false;
-            selected_category.medals_counts_uptodate = false;
-        }
-        selected_category.UpdateMedalsCounts();
+        selected_campaign.ReloadMaps();
     }
 
     void ReloadCurrentCategory()
