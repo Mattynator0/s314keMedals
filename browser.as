@@ -129,7 +129,8 @@ class Browser
 			CenterText(base_circle + " s314ke Medals", vec2(0, -20));
 			UI::PopFont();
 	
-			if (CampaignManager::selected_category == CampaignType::Other)
+			// TODO add encapsulation for this
+			if (CampaignManager::selected_category.campaign_type == CampaignType::Other)
 			{
 				UI::PushFont(base_normal_font);
 				CenterText("Refresh list", vec2(-10, 70));
@@ -177,12 +178,16 @@ class Browser
 			checkbox_label = " Tiles";
 		else checkbox_label = " List";
 
-		UI::PushStyleColor(UI::Col::CheckMark, brightest_color);
-		UI::PushStyleColor(UI::Col::FrameBg, vec4(.35, .35, .35, .3));
-		UI::PushStyleColor(UI::Col::FrameBgHovered, base_color);
-		UI::PushStyleColor(UI::Col::FrameBgActive, brighter_color);
-		tiles_display = UI::Checkbox(checkbox_label, tiles_display);
-		UI::PopStyleColor(4); // checkmark and frame
+		if (tiles_display)
+		{
+			if (UI::Button(Icons::Bars))
+				tiles_display = false;
+		}
+		else
+		{
+			if (UI::Button(Icons::ThLarge))
+				tiles_display = true;
+		}
 
 		UI::BeginTabBar("CampaignsBar");
 
@@ -190,31 +195,31 @@ class Browser
 		{
 			CampaignManager::SelectCategory(CampaignType::Nadeo);
 			if (tiles_display)
-				DrawCampaignSelectionMenuTabTiles();
-			else DrawCampaignSelectionMenuTabTable();
+				DrawCampaignSelectionMenuTiles();
+			else DrawCampaignSelectionMenuList();
 			UI::EndTabItem(); // "Campaigns"
 		}
 		if (UI::BeginTabItem("Track of the Day"))
 		{
 			CampaignManager::SelectCategory(CampaignType::Totd);
 			if (tiles_display)
-				DrawCampaignSelectionMenuTabTiles();
-			else DrawCampaignSelectionMenuTabTable();
+				DrawCampaignSelectionMenuTiles();
+			else DrawCampaignSelectionMenuList();
 			UI::EndTabItem(); // "Track of the Day"
 		}
 		if (UI::BeginTabItem("Other"))
 		{
 			CampaignManager::SelectCategory(CampaignType::Other);
 			if (tiles_display)
-				DrawCampaignSelectionMenuTabTiles();
-			else DrawCampaignSelectionMenuTabTable();
+				DrawCampaignSelectionMenuTiles();
+			else DrawCampaignSelectionMenuList();
 			UI::EndTabItem(); // "Other"
 		}
 		UI::EndTabBar(); // "CampaignsBar"
 		UI::PopStyleColor(3);
 	}
 
-	void DrawCampaignSelectionMenuTabTable()
+	void DrawCampaignSelectionMenuList()
 	{
 		if (!CampaignManager::GetSelectedCategory().campaigns_loaded)
 		{
@@ -224,13 +229,14 @@ class Browser
 		
 		UI::PushStyleColor(UI::Col::TableRowBg, vec4(.25, .25, .25, .2));
 		UI::PushFont(base_normal_font);
-		if (UI::BeginTable("CampaignsTableList", 4, UI::TableFlags::RowBg | UI::TableFlags::ScrollY | UI::TableFlags::PadOuterX))
+		if (UI::BeginTable("CampaignsTableList", 5, UI::TableFlags::RowBg | UI::TableFlags::ScrollY | UI::TableFlags::PadOuterX))
 		{
 			UI::TableSetupColumn("Name", UI::TableColumnFlags::WidthStretch);
 			UI::TableSetupColumn("##achieved", UI::TableColumnFlags::WidthFixed);
 			UI::TableSetupColumn("Progress   ", UI::TableColumnFlags::WidthFixed);
-			UI::TableSetupColumn("##button", UI::TableColumnFlags::WidthFixed);
-			UI::TableSetupScrollFreeze(4, 1);
+			UI::TableSetupColumn("##info", UI::TableColumnFlags::WidthFixed);
+			UI::TableSetupColumn("##refresh", UI::TableColumnFlags::WidthFixed);
+			UI::TableSetupScrollFreeze(5, 1);
 
 			UI::TableHeadersRow();
 
@@ -250,11 +256,19 @@ class Browser
 				UI::TableNextColumn(); // "Progress"
 				UI::Text(tostring(campaign.medals_achieved) + " / " + campaign.medals_total);
 
-				UI::TableNextColumn(); // "##button"
+				UI::TableNextColumn(); // "##info"
 				UI::PushFont(base_small_font);
-				UI::PushID("CampaignButton" + tostring(i));
-				if (UI::Button(Icons::Play))
+				UI::PushID("CampaignInfoButton" + tostring(i));
+				if (UI::Button(Icons::InfoCircle))
 					CampaignManager::SelectCampaign(i);
+				UI::PopID();
+				UI::PopFont(); // small
+
+				UI::TableNextColumn(); // "##refresh"
+				UI::PushFont(base_small_font);
+				UI::PushID("CampaignRefreshButton" + tostring(i));
+				if (UI::Button(Icons::Refresh))
+					CampaignManager::ReloadCampaignMaps(i);
 				UI::PopID();
 				UI::PopFont(); // small
 			}
@@ -264,7 +278,7 @@ class Browser
 		UI::PopFont(); // normal
 		UI::PopStyleColor(); // TableRowBg
 	}
-	void DrawCampaignSelectionMenuTabTiles()
+	void DrawCampaignSelectionMenuTiles()
 	{
 		const vec2 button_size = vec2(80, 80);
 		const float button_padding = 5; // also minimum value of 'b'
