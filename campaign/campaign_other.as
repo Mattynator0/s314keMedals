@@ -11,8 +11,10 @@ class CategoryOther : CampaignCategory
         return "https://openplanet.dev/plugin/s314kemedals/config/other_campaigns";
     }
 
-    void FetchListOfCampaignsCoro(const string&in config_url) override
+    void FetchListOfCampaignsCoro() override
     {
+        string config_url = GetCampaignsReqUrlBase();
+        
         auto @config_req = Net::HttpGet(config_url);
         while (!config_req.Finished()) yield();
 
@@ -47,6 +49,11 @@ class CategoryOther : CampaignCategory
         campaigns_list.InsertLast(campaign);
 
         campaigns_loaded = true;
+    }
+
+    void ReloadMostRecentCampaign() override
+    {
+        return;
     }
 
     void UpdateMedalsCounts() override 

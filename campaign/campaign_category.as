@@ -25,24 +25,32 @@ class CampaignCategory
 
     void FetchListOfCampaigns()
     {
+        startnew(CoroutineFunc(FetchListOfCampaignsCoro));
+    }
+
+    void FetchListOfCampaignsCoro()
+    {
         campaigns_list.Resize(0);
         string req_url = GetCampaignsReqUrlBase();
 
-        startnew(CoroutineFuncUserdataString(FetchListOfCampaignsCoro), req_url);
-    }
-
-    void FetchListOfCampaignsCoro(const string&in req_url)
-    {
         auto @req = NadeoServices::Get("NadeoLiveServices", req_url);
         Api::AddUserAgent(req);
         req.Start();
         while (!req.Finished()) yield();
 
         LoadListOfCampaignsFromJson(req.Json());
+        ReloadMostRecentCampaign();
     }
     
     void LoadListOfCampaignsFromJson(Json::Value@ json)
     {}
+
+    void ReloadMostRecentCampaign()
+    {
+        campaigns_list[0].maps_loaded = false;
+        medals_counts_uptodate = false;
+        UpdateMedalsCounts();
+    }
     
     void ReloadAllCampaignMaps()
     {
