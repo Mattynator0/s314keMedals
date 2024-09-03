@@ -3,9 +3,6 @@ namespace s314keMedals
     // returns 0 if there is no s314ke medal
     uint GetS314keMedalTime()
     {
-        if (!CampaignManager::initialized)
-            return 0;
-
         auto app = cast<CGameManiaPlanet>(GetApp());
         if (app.RootMap is null)
             return 0;
