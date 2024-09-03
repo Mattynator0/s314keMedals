@@ -86,7 +86,6 @@ class Campaign
 
     void ReloadMaps()
     {
-        // FIXME this breaks when selected campaign is not part of selected category
         if (type == CampaignType::Other)
         {
             maps_loaded = false;
@@ -96,7 +95,6 @@ class Campaign
 
         if (!campaign_category.medals_calculating) // prevent setting the flag back to false after the maps already got loaded by a different coroutine
         {
-            // FIXME could this break if selected campaign is part of the selected category?
             maps_loaded = false;
             campaign_category.medals_counts_uptodate = false;
         }

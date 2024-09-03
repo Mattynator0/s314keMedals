@@ -13,6 +13,7 @@ class CategoryOther : CampaignCategory
 
     void FetchListOfCampaignsCoro() override
     {
+        campaigns_list.Resize(0);
         string config_url = GetCampaignsReqUrlBase();
         
         auto @config_req = Net::HttpGet(config_url);

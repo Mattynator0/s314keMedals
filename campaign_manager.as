@@ -22,7 +22,6 @@ namespace CampaignManager
 
     void ReloadOtherCampaignsList()
     {
-        // TODO check if this still works the way it should
         campaign_categories[CampaignType::Other].FetchListOfCampaigns();
     }
 
@@ -100,6 +99,11 @@ namespace CampaignManager
     uint GetMapsCount()
     {
         return selected_campaign.maps.Length;
+    }
+
+    CampaignType GetSelectedCategoryType()
+    {
+        return selected_category.campaign_type;
     }
 
     bool AreCampaignRecordsLoading()

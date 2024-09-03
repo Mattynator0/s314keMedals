@@ -129,8 +129,7 @@ class Browser
 			CenterText(base_circle + " s314ke Medals", vec2(0, -20));
 			UI::PopFont();
 	
-			// TODO add encapsulation for this
-			if (CampaignManager::selected_category.campaign_type == CampaignType::Other)
+			if (CampaignManager::GetSelectedCategoryType() == CampaignType::Other)
 			{
 				UI::PushFont(base_normal_font);
 				CenterText("Refresh list", vec2(-10, 70));
@@ -326,8 +325,7 @@ class Browser
 				}
 				UI::PopID();
 				
-				// TODO add encapsulation for this
-				if (CampaignManager::GetSelectedCategory().campaign_type == CampaignType::Other)
+				if (CampaignManager::GetSelectedCategoryType() == CampaignType::Other)
 				{
 					UI::PushFont(base_large_font);
 					if (Draw::MeasureString(campaign.short_name).x > button_size.x - 14) {
