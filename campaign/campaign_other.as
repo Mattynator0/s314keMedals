@@ -48,7 +48,9 @@ class CategoryOther : CampaignCategory
         string file_name = string(json["name"]) + " " + Json::Write(json["campaignId"]);
         Campaign campaign(json["name"], file_name, campaign_type, other_index, this, json["shortName"]);
         campaigns_list.InsertLast(campaign);
+        Api::FetchMapsInfo(campaign);
 
+        // setting the flag here makes the campaigns start appearing one by one in a nice looking way
         campaigns_loaded = true;
     }
 
