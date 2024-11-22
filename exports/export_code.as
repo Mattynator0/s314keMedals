@@ -13,9 +13,8 @@ namespace s314keMedals
         map_req.Start();
         while (!map_req.Finished()) yield();
 
-        const string s314ke_id = "5f9c2a43-593f-4e84-a64d-82319058dd3a";
         string records_req_url = "https://prod.trackmania.core.nadeo.online/v2/mapRecords/?accountIdList=" + 
-                                    s314ke_id + "&mapId=";
+                                    Api::s314ke_id + "&mapId=";
         records_req_url += map_req.Json()["mapId"];
         auto records_req = NadeoServices::Get("NadeoServices", records_req_url);
         records_req.Start();
