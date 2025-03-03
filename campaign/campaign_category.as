@@ -4,7 +4,8 @@ class CampaignCategory
     array<Campaign@> campaigns_list;
     CampaignType campaign_type;
     Json::Value campaigns_json;
-    
+    string category_name;
+
     bool campaigns_loaded = false;
     uint medals_achieved = 0;
     uint medals_total = 0;

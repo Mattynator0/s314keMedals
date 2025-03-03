@@ -110,4 +110,9 @@ namespace CampaignManager
     {
         return selected_campaign.AreRecordsLoading();
     }
+
+    string GetCategoryName(CampaignType type)
+    {
+        return campaign_categories[type].category_name;
+    }
 }

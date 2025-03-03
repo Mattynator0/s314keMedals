@@ -3,6 +3,7 @@ class CategoryTotd : CampaignCategory
     CategoryTotd()
     {
         super(CampaignType::Totd);
+        category_name = "Track of the Day";
     }
 
     string GetCampaignsReqUrlBase() override

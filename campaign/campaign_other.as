@@ -4,6 +4,7 @@ class CategoryOther : CampaignCategory
     {
         super(CampaignType::Other);
         campaigns_json["campaignList"] = Json::Array();
+        category_name = "Other";
     }
 
     string GetCampaignsReqUrlBase() override

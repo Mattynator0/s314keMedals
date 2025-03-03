@@ -190,29 +190,17 @@ class Browser
 
 		UI::BeginTabBar("CampaignsBar");
 
-		if (UI::BeginTabItem("Campaigns"))
+		for (int i = 0; i < CampaignType::Count; i++)
 		{
-			CampaignManager::SelectCategory(CampaignType::Nadeo);
-			if (tiles_display)
-				DrawCampaignSelectionMenuTiles();
-			else DrawCampaignSelectionMenuList();
-			UI::EndTabItem(); // "Campaigns"
-		}
-		if (UI::BeginTabItem("Track of the Day"))
-		{
-			CampaignManager::SelectCategory(CampaignType::Totd);
-			if (tiles_display)
-				DrawCampaignSelectionMenuTiles();
-			else DrawCampaignSelectionMenuList();
-			UI::EndTabItem(); // "Track of the Day"
-		}
-		if (UI::BeginTabItem("Other"))
-		{
-			CampaignManager::SelectCategory(CampaignType::Other);
-			if (tiles_display)
-				DrawCampaignSelectionMenuTiles();
-			else DrawCampaignSelectionMenuList();
-			UI::EndTabItem(); // "Other"
+			CampaignType type = CampaignType(i);
+			if (UI::BeginTabItem(CampaignManager::GetCategoryName(type)))
+			{
+				CampaignManager::SelectCategory(type);
+				if (tiles_display)
+					DrawCampaignSelectionMenuTiles();
+				else DrawCampaignSelectionMenuList();
+				UI::EndTabItem(); // Category name
+			}
 		}
 		UI::EndTabBar(); // "CampaignsBar"
 		UI::PopStyleColor(3);

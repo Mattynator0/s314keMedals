@@ -3,6 +3,7 @@ class CategoryNadeo : CampaignCategory
     CategoryNadeo()
     {
         super(CampaignType::Nadeo);
+        category_name = "Campaigns";
     }
 
     string GetCampaignsReqUrlBase() override
