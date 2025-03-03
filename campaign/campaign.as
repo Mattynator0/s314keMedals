@@ -2,8 +2,9 @@ enum CampaignType
 {
     Nadeo = 0,
     Totd = 1,
-    Other = 2,
-    Count = 3
+    Weekly = 2,
+    Other = 3,
+    Count = 4
 }
 
 class Campaign
@@ -32,7 +33,7 @@ class Campaign
         this.type = type;
         this.json_index = json_index;
         @this.campaign_category = campaign_category;
-        this.short_name = (type != CampaignType::Other) ? CreateShortName() : short_name;
+        this.short_name = short_name == "" ? CreateShortName() : short_name;
 
         MyJson::LoadMapsDataFromJson(@this);
         RecalculateMedalsCounts();

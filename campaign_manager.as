@@ -10,6 +10,7 @@ namespace CampaignManager
     {
         CampaignManager::campaign_categories.InsertLast(CategoryNadeo());
         CampaignManager::campaign_categories.InsertLast(CategoryTotd());
+        CampaignManager::campaign_categories.InsertLast(CategoryWeekly());
         CampaignManager::campaign_categories.InsertLast(CategoryOther());
         SelectCategory(CampaignType::Nadeo);
         initialized = true;

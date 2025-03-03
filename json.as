@@ -85,6 +85,7 @@ namespace MyJson
         switch (campaign.type)
         {
             case CampaignType::Nadeo:
+            case CampaignType::Weekly:
                 @json = campaigns_json["campaignList"][campaign.json_index]["playlist"];
                 break;
             case CampaignType::Totd:
