@@ -8,7 +8,7 @@ class CategoryNadeo : CampaignCategory
 
     string GetCampaignsReqUrlBase() override
     {
-        return "https://live-services.trackmania.nadeo.live/api/token/campaign/official?offset=0&length=1000"; // 1000 to get all of them
+        return "https://live-services.trackmania.nadeo.live/api/campaign/official?offset=0&length=1000"; // 1000 to get all of them
     }
 
     void LoadListOfCampaignsFromJson(Json::Value@ json) override
