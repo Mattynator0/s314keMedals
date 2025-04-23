@@ -1,5 +1,4 @@
-// FIXME make this `abstract` once the keyword is supported by the vscode extension
-class CampaignCategory
+abstract class CampaignCategory
 {
     array<Campaign@> campaigns_list;
     CampaignType campaign_type;
