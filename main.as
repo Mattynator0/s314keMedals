@@ -17,6 +17,7 @@ void Main()
 	MyJson::CreatePluginStorageFolders();
 
 	@browser = Browser();
+	RegisterUME();
 	startnew(Api::WatchForMapChange);
 }
 
@@ -39,4 +40,8 @@ void RenderInterface()
 void RenderMenu() {
     if (browser !is null)
 		browser.RenderMenu();
+}
+
+void OnDestroyed() {
+	OnDestroyedUME();
 }

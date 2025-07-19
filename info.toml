@@ -2,8 +2,9 @@
 name        = "s314ke Medals"
 author      = "Mattynator"
 category    = "MattyPlugins"
-version     = "0.4.2"
+version     = "0.4.3"
 
 [script]
 dependencies = [ "NadeoServices" ]
+optional_dependencies = [ "UltimateMedalsExtended" ]
 exports = [ "exports/export.as" ]
