@@ -15,17 +15,16 @@ class Browser
 	uint window_h = 600;
 
 	UI::Texture@ s314ke_medal;
-	UI::Font@ base_large_font;
-	UI::Font@ base_normal_font;
-	UI::Font@ base_small_font;
+	UI::Font@ base_font;
+	float large_font_size = 26;
+	float normal_font_size = 20;
+	float small_font_size = 16;
 
 	Browser()
 	{
 		@s314ke_medal = UI::LoadTexture("s314ke_medal.png");
 
-		@base_large_font = UI::LoadFont("DroidSans.ttf", 26, -1, -1 , true, true, true);
-		@base_normal_font = UI::LoadFont("DroidSans.ttf", 20, -1, -1 , true, true, true);
-		@base_small_font = UI::LoadFont("DroidSans.ttf", 16, -1, -1 , true, true, true);
+		@base_font = UI::LoadFont("DroidSans.ttf");
 
 		CampaignManager::Init();
 	}
@@ -125,38 +124,38 @@ class Browser
 	
 			UI::TableNextColumn();
 			UI::BeginChild("TitleTextWrapper");
-			UI::PushFont(base_large_font);
+			UI::PushFontSize(large_font_size);
 			CenterText(base_circle + " s314ke Medals", vec2(0, -20));
-			UI::PopFont();
+			UI::PopFontSize();
 	
 			if (CampaignManager::GetSelectedCategoryType() == CampaignType::Other)
 			{
-				UI::PushFont(base_normal_font);
+				UI::PushFontSize(normal_font_size);
 				CenterText("Refresh list", vec2(-10, 70));
-				UI::PopFont(); // normal
+				UI::PopFontSize(); // normal
 				UI::SameLine();
-				UI::PushFont(base_small_font);
+				UI::PushFontSize(small_font_size);
 				if (UI::Button(Icons::Refresh)) {
                 	CampaignManager::ReloadOtherCampaignsList();
 				}
-				UI::PopFont(); // small
+				UI::PopFontSize(); // small
 			}
 			else
 			{
 				string medal_counter_text = base_circle + " " + CampaignManager::GetSelectedCategory().medals_achieved + 
 											" / " + CampaignManager::GetSelectedCategory().medals_total;
-				UI::PushFont(base_normal_font);
+				UI::PushFontSize(normal_font_size);
 				CenterText(medal_counter_text, vec2(-20, 70));
 				UI::SameLine();
-				UI::PushFont(base_small_font);
+				UI::PushFontSize(small_font_size);
 				if (UI::Button(Icons::Refresh)) {
 					CampaignManager::ReloadCurrentCategory();
 				}
-				UI::PopFont(); // small
+				UI::PopFontSize(); // small
 				if (CampaignManager::GetSelectedCategory().medals_calculating) {
 					CenterText("Loading...", vec2(0, 125));
 				}
-				UI::PopFont(); // normal
+				UI::PopFontSize(); // normal
 			}
 
 			UI::EndChild(); // "TitleTextWrapper"
@@ -215,7 +214,7 @@ class Browser
 		}
 		
 		UI::PushStyleColor(UI::Col::TableRowBg, vec4(.25, .25, .25, .2));
-		UI::PushFont(base_normal_font);
+		UI::PushFontSize(normal_font_size);
 		if (UI::BeginTable("CampaignsTableList", 5, UI::TableFlags::RowBg | UI::TableFlags::ScrollY | UI::TableFlags::PadOuterX))
 		{
 			UI::TableSetupColumn("Name", UI::TableColumnFlags::WidthStretch);
@@ -244,25 +243,25 @@ class Browser
 				UI::Text(tostring(campaign.medals_achieved) + " / " + campaign.medals_total);
 
 				UI::TableNextColumn(); // "##info"
-				UI::PushFont(base_small_font);
+				UI::PushFontSize(small_font_size);
 				UI::PushID("CampaignInfoButton" + tostring(i));
 				if (UI::Button(Icons::InfoCircle))
 					CampaignManager::SelectCampaign(i);
 				UI::PopID();
-				UI::PopFont(); // small
+				UI::PopFontSize(); // small
 
 				UI::TableNextColumn(); // "##refresh"
-				UI::PushFont(base_small_font);
+				UI::PushFontSize(small_font_size);
 				UI::PushID("CampaignRefreshButton" + tostring(i));
 				if (UI::Button(Icons::Refresh))
 					CampaignManager::ReloadCampaignMaps(i);
 				UI::PopID();
-				UI::PopFont(); // small
+				UI::PopFontSize(); // small
 			}
 
 			UI::EndTable(); // "CampaignsTableList"
 		}
-		UI::PopFont(); // normal
+		UI::PopFontSize(); // normal
 		UI::PopStyleColor(); // TableRowBg
 	}
 	void DrawCampaignSelectionMenuTiles()
@@ -315,36 +314,36 @@ class Browser
 				
 				if (CampaignManager::GetSelectedCategoryType() == CampaignType::Other)
 				{
-					UI::PushFont(base_large_font);
+					UI::PushFontSize(large_font_size);
 					if (Draw::MeasureString(campaign.short_name).x > button_size.x - 14) {
-						UI::PopFont();
-						UI::PushFont(base_normal_font);
+						UI::PopFontSize();
+						UI::PushFontSize(normal_font_size);
 					}
 					if (Draw::MeasureString(campaign.short_name).x > button_size.x - 14) {
-						UI::PopFont();
-						UI::PushFont(base_small_font);
+						UI::PopFontSize();
+						UI::PushFontSize(small_font_size);
 					}
 					vec2 text_size = Draw::MeasureString(campaign.short_name);
 					float move_short_name_x = (button_size.x - text_size.x) * 0.5f;
 					float additional_offset = 1.0; // for some reason the text is slightly off center without this
 					UI::SetCursorPos(UI::GetCursorPos() + vec2(b + move_short_name_x + additional_offset, -35 - (text_size.y))); // center text
 					UI::Text(campaign.short_name);
-					UI::PopFont();
+					UI::PopFontSize();
 				}
 				else
 				{
-					UI::PushFont(base_large_font);
+					UI::PushFontSize(large_font_size);
 					float move_twodigits_x = (button_size.x - Draw::MeasureString(campaign.GetTwoLastDigitsOfYear()).x) * 0.5f;
 					float additional_offset = 1.0; // for some reason the text is slightly off center without this
 					UI::SetCursorPos(UI::GetCursorPos() + vec2(b + move_twodigits_x + additional_offset, -70)); // center text
 					UI::Text(campaign.GetTwoLastDigitsOfYear()); // year
-					UI::PopFont();
+					UI::PopFontSize();
 
-					UI::PushFont(base_normal_font); 
+					UI::PushFontSize(normal_font_size); 
 					float move_month_x = (button_size.x - Draw::MeasureString(campaign.short_name).x) * 0.5f;
 					UI::SetCursorPos(UI::GetCursorPos() + vec2(b + move_month_x + additional_offset, 0)); // center text
 					UI::Text(campaign.short_name);
-					UI::PopFont();
+					UI::PopFontSize();
 				}
 			}
 			UI::PopStyleVar();
@@ -364,7 +363,7 @@ class Browser
 			UI::TableSetupColumn("##name", UI::TableColumnFlags::WidthStretch);
 			UI::TableSetupColumn("##progress", UI::TableColumnFlags::WidthStretch);
 			
-			UI::PushFont(base_large_font);
+			UI::PushFontSize(large_font_size);
 
 			UI::TableNextColumn();
 			UI::BeginChild("CampaignName");
@@ -384,14 +383,14 @@ class Browser
 			UI::SetCursorPos((container_size - medalcounter_text_size) * 0.5f + vec2(-10, 0)); // -10 to account for the refresh button
 			UI::Text(medalcounter_text);
 			UI::SameLine();
-			UI::PushFont(base_small_font);
+			UI::PushFontSize(small_font_size);
 			if (!CampaignManager::AreCampaignRecordsLoading() && UI::Button(Icons::Refresh)) {
 				CampaignManager::ReloadSelectedCampaignMaps();
 			}
-			UI::PopFont(); // small
+			UI::PopFontSize(); // small
 			UI::EndChild(); // "CampaignMedalCounter"
 
-			UI::PopFont(); // large
+			UI::PopFontSize(); // large
 			UI::EndTable(); // "CampaignInfoTable"
 		}
 		UI::EndChild(); // "CampaignInfo"
@@ -407,7 +406,7 @@ class Browser
 		// a single whitespace at the beginning of the checkbox label is intentional and used as padding
 		show_only_unbeaten_medals = UI::Checkbox(" Only show maps with an unachieved medal", show_only_unbeaten_medals);
 		UI::PushStyleColor(UI::Col::TableRowBg, vec4(.25, .25, .25, .2));
-		UI::PushFont(base_small_font);
+		UI::PushFontSize(small_font_size);
 
 		uint n_columns = CampaignManager::selected_campaign.type == CampaignType::Totd ? 7 : 6;
 		if (UI::BeginTable("MapsTable", n_columns, UI::TableFlags::RowBg | UI::TableFlags::ScrollY | UI::TableFlags::PadOuterX))
@@ -469,7 +468,7 @@ class Browser
 			}
 			UI::EndTable(); // "MapsTable"
 		}
-		UI::PopFont();
+		UI::PopFontSize();
 		UI::PopStyleColor(5); // TableRowBg, Frame, Checkmark
 		UI::EndChild(); // "Maps"
 	}
