@@ -8,20 +8,25 @@ class UMEs314keMedal : UltimateMedalsExtended::IMedal {
         return c;
     }
 
-    void UpdateMedal(const string &in uid) override {}
+    bool has_medal;
+    string uid;
+
+    void UpdateMedal(const string &in uid) override {
+        this.uid = uid;
+        print(uid);
+        has_medal = MyJson::map_uid_to_handle.Exists(uid);
+        print(has_medal);
+    }
 
     bool HasMedalTime(const string &in uid) override {
-        return MyJson::map_uid_to_handle.Exists(uid);
+        if (uid != this.uid) {return false;}
+        return has_medal;
     }
-    uint GetMedalTime() override {
-        auto app = cast<CGameManiaPlanet>(GetApp());
-        if (app.RootMap is null)
-            return 0;
 
-        const string uid = app.RootMap.EdChallengeId;
+    uint GetMedalTime() override {
         Map@ map;
 
-        MyJson::map_uid_to_handle.Get(uid, @map);
+        MyJson::map_uid_to_handle.Get(this.uid, @map);
         return map.s314ke_medal_time;
     }
 }
